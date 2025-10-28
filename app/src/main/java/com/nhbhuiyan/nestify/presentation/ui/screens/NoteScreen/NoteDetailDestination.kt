@@ -4,11 +4,10 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
-import com.nhbhuiyan.nestify.presentation.viewModel.NotesViewModel
+import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data.NotesViewModel
 
 @Composable
 fun NoteDetailDestination(navController: NavController, viewmodel: NotesViewModel = hiltViewModel()) {

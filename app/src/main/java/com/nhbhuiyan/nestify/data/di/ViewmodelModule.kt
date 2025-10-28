@@ -8,7 +8,7 @@ import com.nhbhuiyan.nestify.domain.usecases.RoutinesUsecases.GetAllClassRoutine
 import com.nhbhuiyan.nestify.domain.usecases.FIleUsecases.GetAllFilesUseCase
 import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.GetAllLinksUseCase
 import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.GetAllNotesUseCase
-import com.nhbhuiyan.nestify.presentation.viewModel.HomeViewModel
+import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.data.HomeViewModel
 import com.nhbhuiyan.nestify.presentation.viewModel.ShareViewModel
 import dagger.Module
 import dagger.Provides
@@ -27,8 +27,13 @@ object ViewmodelModule {
         getAllLinksUseCase: GetAllLinksUseCase,
         getAllFilesUseCase: GetAllFilesUseCase,
         getAllClassRoutinesUsecases: GetAllClassRoutinesUsecases
-    ): HomeViewModel{
-        return HomeViewModel(getAllFilesUseCase,getAllLinksUseCase,getAllNotesUseCase,getAllClassRoutinesUsecases)
+    ): HomeViewModel {
+        return HomeViewModel(
+            getAllFilesUseCase = getAllFilesUseCase,
+            getAllLinksUseCase = getAllLinksUseCase,
+            getAllNotesUseCase = getAllNotesUseCase,
+            getAllClassRoutineUsecase = getAllClassRoutinesUsecases
+        )
     }
 
 //    @Provides

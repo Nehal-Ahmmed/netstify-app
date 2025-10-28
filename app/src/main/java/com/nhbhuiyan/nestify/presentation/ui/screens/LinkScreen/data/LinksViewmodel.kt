@@ -1,9 +1,10 @@
-package com.nhbhuiyan.nestify.presentation.viewModel
+package com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.data
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.CreateLinkUseCase
+import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.DeleteLinkUseCase
 import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.GetAllLinksUseCase
 import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.GetLinkByIdUsecase
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.components.LinkUiState
@@ -17,7 +18,8 @@ import javax.inject.Inject
 class LinksViewmodel @Inject constructor(
     private val getAllLinksUseCase: GetAllLinksUseCase,
     private val createLinkUseCase: CreateLinkUseCase,
-    private val getLinkByIdUseCase: GetLinkByIdUsecase
+    private val getLinkByIdUseCase: GetLinkByIdUsecase,
+    private val deleteLinkByIdUseCase: DeleteLinkUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LinkUiState())
     val uiState: StateFlow<LinkUiState> = _uiState
@@ -54,6 +56,12 @@ class LinksViewmodel @Inject constructor(
             }catch (e: Exception){
                 _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
             }
+        }
+    }
+
+    fun deleteLinkById(id: Long){
+        viewModelScope.launch {
+            deleteLinkByIdUseCase(id)
         }
     }
 }

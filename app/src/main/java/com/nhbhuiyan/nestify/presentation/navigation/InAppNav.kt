@@ -14,11 +14,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.presentation.navigation.Components.BottomNavItem
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
 import com.nhbhuiyan.nestify.presentation.navigation.Components.bottomNavigation
+import com.nhbhuiyan.nestify.presentation.ui.screens.ArchiveScreen.ArchiveScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.FacouritesScreen.FacouritesScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.FileDetailDestination
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.FileScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.HomeScreen
@@ -28,6 +31,10 @@ import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.NoteDetailDestin
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.NotesListScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.RoutineScreen.RoutineDetailDestination
 import com.nhbhuiyan.nestify.presentation.ui.screens.RoutineScreen.RoutineListScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.SearchScreen.SearchScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.bookmarks.BookmarksScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.createnote.CreateNoteScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.settings.SettingsScreen
 
 @Composable
 fun InAppNav(modifier: Modifier = Modifier) {
@@ -45,9 +52,9 @@ fun InAppNav(modifier: Modifier = Modifier) {
 
     selectedItem = when (backStackState?.destination?.route) {
         Route.Home.route -> 0
-        Route.Notes.route -> 1
-        Route.Links.route -> 2
-        Route.Files.route -> 3
+        Route.Search.route -> 1
+        Route.Bookmarks.route -> 2
+        Route.Settings.route -> 3
 
         else -> 0
     }
@@ -63,9 +70,20 @@ fun InAppNav(modifier: Modifier = Modifier) {
                 onItemClick = { index ->
                     when (index) {
                         0 -> navigateToTab(navController = navController, route = Route.Home.route)
-                        1 -> navigateToTab(navController = navController, route = Route.Notes.route)
-                        2 -> navigateToTab(navController = navController, route = Route.Links.route)
-                        3 -> navigateToTab(navController = navController, route = Route.Files.route)
+                        1 -> navigateToTab(
+                            navController = navController,
+                            route = Route.Search.route
+                        )
+
+                        2 -> navigateToTab(
+                            navController = navController,
+                            route = Route.Bookmarks.route
+                        )
+
+                        3 -> navigateToTab(
+                            navController = navController,
+                            route = Route.Settings.route
+                        )
                     }
                 }
             )
@@ -75,20 +93,45 @@ fun InAppNav(modifier: Modifier = Modifier) {
 
         NavHost(
             navController = navController,
-            startDestination = Route.Home.route,
+            startDestination = Route.BottomNavBarNav.route,
             modifier = modifier.padding(bottom = bottomPadding)
         ) {
 
-            composable(route = Route.Home.route) {
-                HomeScreen(navController)
+            navigation(
+                route = Route.BottomNavBarNav.route,
+                startDestination = Route.Home.route
+            ) {
+                //homeScreen
+                composable(route = Route.Home.route) {
+                    HomeScreen(navController)
+                }
+
+                //search
+                composable(route = Route.Search.route) {
+                    SearchScreen(navController)
+                }
+
+                //Bookmarks
+                composable(route = Route.Bookmarks.route) {
+                    BookmarksScreen(navController)
+                }
+
+                //settings
+                composable(route = Route.Settings.route) {
+                    SettingsScreen(navController)
+                }
             }
+
 
             //notes
             composable(route = Route.Notes.route) {
                 NotesListScreen(navController)
             }
-            composable(route = Route.NoteDetail.route){
+            composable(route = Route.NoteDetail.route) {
                 NoteDetailDestination(navController = navController)
+            }
+            composable(route = Route.createNote.route) {
+                CreateNoteScreen(navController = navController)
             }
 
             //links
@@ -108,11 +151,21 @@ fun InAppNav(modifier: Modifier = Modifier) {
             }
 
             //routines
-            composable(route= Route.Routines.route){
-                RoutineListScreen(navController=navController)
+            composable(route = Route.Routines.route) {
+                RoutineListScreen(navController = navController)
             }
-            composable(route= Route.RoutineDetail.route){
-                RoutineDetailDestination(navController=navController)
+            composable(route = Route.RoutineDetail.route) {
+                RoutineDetailDestination(navController = navController)
+            }
+
+            //archive
+            composable(route = Route.Archive.route) {
+                ArchiveScreen(navController = navController)
+            }
+
+            //favorites
+            composable(route = Route.Favorites.route) {
+                FacouritesScreen(navController = navController)
             }
 
         }

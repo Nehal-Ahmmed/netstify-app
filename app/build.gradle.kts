@@ -62,6 +62,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    //for icons
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+
 
     // Room
     implementation("androidx.room:room-runtime:2.6.0")

@@ -11,7 +11,7 @@ import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
 fun NavGraph(){
     val navController = rememberNavController()
     
-    NavHost(navController=navController,startDestination= Route.InAppNav.route){
+    NavHost(navController=navController,startDestination= Route.InAppNav1.route){
 
         //group 1
         navigation(route= Route.AppStartNav.route, startDestination = Route.SplashScreen.route){
@@ -19,7 +19,7 @@ fun NavGraph(){
         }
         
         //group 2
-        navigation(route= Route.InAppNav.route, startDestination = Route.mediaNav.route){
+        navigation(route= Route.InAppNav1.route, startDestination = Route.mediaNav.route){
             composable(route= Route.mediaNav.route){
                 InAppNav()
             }

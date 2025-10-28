@@ -4,11 +4,13 @@ sealed class Route(val route: String){
     object SplashScreen: Route("splashScreen")
 
     object Home : Route("home")
+    object Search: Route("search")
     //notes
     object Notes : Route("notes")
     object NoteDetail : Route("noteDetail/{noteId}"){
         fun createRoute(noteId: Long?) = "noteDetail/$noteId"
     }
+    object createNote: Route("createNote")
 
     //links
     object Links : Route("links")
@@ -28,11 +30,24 @@ sealed class Route(val route: String){
         fun createRoute(routineId: Long?) = "routineDetail/$routineId"
     }
 
+    //archive
+    object Archive : Route("archive")
+
+    //favorites
+    object Favorites : Route("favorites")
+
+    //Bookmarks
+    object Bookmarks: Route("bookmark")
+
+
     object Academics: Route("academics")
     object Results : Route("results")
     object Settings : Route("settings")
 
     object AppStartNav : Route("appStartNav")
-    object InAppNav : Route("inAppNav")
+    object InAppNav1 : Route("inAppNav")
+    object InAppNav2 : Route("InAppNav2")
     object mediaNav: Route("mediaNav")
+    object mediaNav2: Route("mediaNav2")
+    object BottomNavBarNav: Route("bottomNavBarNav")
 }

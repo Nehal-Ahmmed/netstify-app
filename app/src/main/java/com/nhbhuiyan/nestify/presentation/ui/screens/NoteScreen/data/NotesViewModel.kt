@@ -1,9 +1,10 @@
-package com.nhbhuiyan.nestify.presentation.viewModel
+package com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.CreateNoteUseCase
+import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.DeleteNoteUseCase
 import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.GetAllNotesUseCase
 import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.GetNoteByIdUseCases
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.components.NotesUiState
@@ -16,8 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     private val getAllNotesUseCase: GetAllNotesUseCase,
-    private val createNoteUseCase: CreateNoteUseCase,
-    private val getNoteByIdUseCase: GetNoteByIdUseCases
+    private val getNoteByIdUseCase: GetNoteByIdUseCases,
+    private val deleteNoteUsecases: DeleteNoteUseCase
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(NotesUiState())
     val uiState: StateFlow<NotesUiState> = _uiState
@@ -34,12 +35,6 @@ class NotesViewModel @Inject constructor(
                     isLoading = false
                 )
             }
-        }
-    }
-
-     fun createNote(title: String, content: String, tags: List<String> = emptyList()){
-        viewModelScope.launch {
-            createNoteUseCase(title,content,tags)
         }
     }
 
@@ -61,6 +56,12 @@ class NotesViewModel @Inject constructor(
                 )
             }
 
+        }
+    }
+
+    fun deleteNote(id: Long){
+        viewModelScope.launch {
+            deleteNoteUsecases(id)
         }
     }
 }
