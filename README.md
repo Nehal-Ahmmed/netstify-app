@@ -1,19 +1,20 @@
 🪶 Nestify — Your Personal Bag of Essentials : An android app
 
-Look of the app: 
+## 📸 App Screenshots
 
-![Uploading IMG-20251104-WA0006.jpg…]()
-![Uploading IMG-20251104-WA0007.jpg…]()
+<p align="center">
+  <img src="assets/images/IMG-20251104-WA0006.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0007.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0010.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0011 - Copy.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0011.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0012 - Copy.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0014.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0015.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0017.jpg" width="220" style="border-radius:12px; margin:8px;">
+  <img src="assets/images/IMG-20251104-WA0012.jpg" width="220" style="border-radius:12px; margin:8px;">
+</p>
 
-![Uploading IMG-20251104-WA0010.jpg…]()
-![Uploading IMG-20251104-WA0011 - Copy.jpg…]()
-![Uploading IMG-20251104-WA0011.jpg…]()
-
-![Uploading IMG-20251104-WA0012 - Copy.jpg…]()
-![Uploading IMG-20251104-WA0014.jpg…]()
-![Uploading IMG-20251104-WA0015.jpg…]()
-![Uploading IMG-20251104-WA0017.jpg…]()
-![Uploading IMG-20251104-WA0012.jpg…]()
 
 
 📱 Overview
