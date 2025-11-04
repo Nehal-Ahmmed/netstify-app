@@ -1,19 +1,27 @@
 🪶 Nestify — Your Personal Bag of Essentials : An android app
 
-## 📸 App Screenshots
+## 📱 Screenshots
+*(will be updated soon)*
 
-<p align="center">
-  <img src="assets/images/IMG-20251104-WA0006.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0007.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0010.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0011 - Copy.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0011.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0012 - Copy.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0014.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0015.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0017.jpg" width="220" style="border-radius:12px; margin:8px;">
-  <img src="assets/images/IMG-20251104-WA0012.jpg" width="220" style="border-radius:12px; margin:8px;">
-</p>
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
+
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0006" width="200" alt="Nestify Screenshot 1">
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0007" width="200" alt="Nestify Screenshot 2">
+  
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0010" width="200" alt="Nestify Screenshot 3">
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0011-Copy" width="200" alt="Nestify Screenshot 4">
+  
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0011" width="200" alt="Nestify Screenshot 5">
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0012-Copy" width="200" alt="Nestify Screenshot 6">
+  
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0014" width="200" alt="Nestify Screenshot 7">
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0015" width="200" alt="Nestify Screenshot 8">
+  
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0017" width="200" alt="Nestify Screenshot 9">
+  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0012" width="200" alt="Nestify Screenshot 10">
+
+</div>
+
 
 
 
