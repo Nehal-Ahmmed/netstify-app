@@ -22,15 +22,6 @@
 
 </div>
 
-# Screenshots 📱
-//will be updated soon
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
-  <img src="https://github.com/user-attachments/assets/21a12b9b-2610-4c4f-911d-314d99d47573" width="150" alt="E-Shop Home Screen">
-  <img src="https://github.com/user-attachments/assets/b890a2c5-3ec6-47e4-bd7a-c1ee9f36ccc0" width="150" alt="E-Shop Product View">
-  <img src="https://github.com/user-attachments/assets/20b128fc-e4c4-4b65-b6ad-9d1cc6970030" width="150" alt="E-Shop Cart">
-  <img src="https://github.com/user-attachments/assets/fb2ede70-df71-41cd-b90c-7b04914275d9" width="150" alt="E-Shop Profile">
-</div>
-
 
 
 
