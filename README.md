@@ -1,37 +1,26 @@
 🪶 Nestify — Your Personal Bag of Essentials : An android app
 
-## 📱 Screenshots
+## Screenshots 📱
 *(will be updated soon)*
 
 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
 
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0006" width="200" alt="Nestify Screenshot 1">
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0007" width="200" alt="Nestify Screenshot 2">
-  
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0010" width="200" alt="Nestify Screenshot 3">
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0011-Copy" width="200" alt="Nestify Screenshot 4">
-  
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0011" width="200" alt="Nestify Screenshot 5">
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0012-Copy" width="200" alt="Nestify Screenshot 6">
-  
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0014" width="200" alt="Nestify Screenshot 7">
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0015" width="200" alt="Nestify Screenshot 8">
-  
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0017" width="200" alt="Nestify Screenshot 9">
-  <img src="https://github.com/user-attachments/assets/IMG-20251104-WA0012" width="200" alt="Nestify Screenshot 10">
+  <img src="https://github.com/user-attachments/assets/cdaecb8d-fedb-4a68-8e0a-672800e5e4b5" width="150" alt="Nestify Screenshot 1">
+  <img src="https://github.com/user-attachments/assets/e5aecdce-7a30-4a97-b44b-a32c7fd09326" width="150" alt="Nestify Screenshot 2">
+
+  <img src="https://github.com/user-attachments/assets/f6224ba1-df8c-4ee0-8557-6817d2abdcd8" width="150" alt="Nestify Screenshot 3">
+  <img src="https://github.com/user-attachments/assets/c60acf3b-34b3-46bd-95d6-72405c67ae99" width="150" alt="Nestify Screenshot 4">
+
+  <img src="https://github.com/user-attachments/assets/a2571bbc-5636-4cc1-936c-bd8f3780747a" width="150" alt="Nestify Screenshot 5">
+  <img src="https://github.com/user-attachments/assets/05f7c70c-625f-4c20-93b0-ff95ea9aef41" width="150" alt="Nestify Screenshot 6">
+
+  <img src="https://github.com/user-attachments/assets/fcbaab90-e704-4daa-a962-199790443268" width="150" alt="Nestify Screenshot 7">
+  <img src="https://github.com/user-attachments/assets/82755ea7-8ad6-43fa-a8a2-93d3f1d12912" width="150" alt="Nestify Screenshot 8">
+
+  <img src="https://github.com/user-attachments/assets/140c3d29-526f-42ce-bb08-441bdad039e0" width="150" alt="Nestify Screenshot 9">
+  <img src="https://github.com/user-attachments/assets/97880569-297e-4520-9716-178d942ba632" width="150" alt="Nestify Screenshot 10">
 
 </div>
-
-# Screenshots 📱
-//will be updated soon
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0;">
-  <img src="https://github.com/user-attachments/assets/21a12b9b-2610-4c4f-911d-314d99d47573" width="150" alt="E-Shop Home Screen">
-  <img src="https://github.com/user-attachments/assets/b890a2c5-3ec6-47e4-bd7a-c1ee9f36ccc0" width="150" alt="E-Shop Product View">
-  <img src="https://github.com/user-attachments/assets/20b128fc-e4c4-4b65-b6ad-9d1cc6970030" width="150" alt="E-Shop Cart">
-  <img src="https://github.com/user-attachments/assets/fb2ede70-df71-41cd-b90c-7b04914275d9" width="150" alt="E-Shop Profile">
-</div>
-
-
 
 
 📱 Overview
