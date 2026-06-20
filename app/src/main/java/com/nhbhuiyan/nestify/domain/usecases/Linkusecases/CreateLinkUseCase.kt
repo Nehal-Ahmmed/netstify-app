@@ -13,7 +13,8 @@ class CreateLinkUseCase @Inject constructor(
     suspend operator fun invoke(
         title: String,
         description: String,
-        url: String
+        url: String,
+        folderId: Long? = null
     ) : Long {
         val now = Clock.System.now()
         val domain = extractDomain(url)
@@ -23,7 +24,8 @@ class CreateLinkUseCase @Inject constructor(
             url = url,
             createdAt = now,
             updatedAt = now,
-            domain = domain
+            domain = domain,
+            folderId = folderId
         )
         return repository.createLink(link)
     }

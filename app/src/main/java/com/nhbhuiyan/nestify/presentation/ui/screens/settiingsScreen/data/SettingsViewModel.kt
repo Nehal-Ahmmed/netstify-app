@@ -1,33 +1,82 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.settings
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nhbhuiyan.nestify.domain.model.FontSize
+import com.nhbhuiyan.nestify.domain.repository.SettingsRepo
+import com.nhbhuiyan.nestify.presentation.ui.screens.settiingsScreen.components.SettingState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor() : ViewModel() {
+class SettingsViewModel @Inject constructor(
+    private val repository: SettingsRepo
+) : ViewModel() {
 
     // MARK: - UI STATE
-    private val _uiState = MutableStateFlow(SettingsState())
-    val uiState: StateFlow<SettingsState> = _uiState
+    private val _uiState = MutableStateFlow(SettingState(isDarkTheme = false))
+    val uiState: StateFlow<SettingState> = _uiState
 
     // MARK: - DIALOG STATES
     var showFontSizeSelector by mutableStateOf(false)
-
     var showBackupDialog by mutableStateOf(false)
-
     var showClearCacheDialog by mutableStateOf(false)
-
     var showDeleteAllDialog by mutableStateOf(false)
 
-    // MARK: - SETTINGS ACTIONS
+    init {
+        loadSettingFromRepository()
+        Log.d("viewmodel", "loadSettingfromRepository: ${uiState.value} ")
+    }
+
+    private fun loadSettingFromRepository() {
+
+        _uiState.value = _uiState.value.copy(isLoading = true)
+
+        viewModelScope.launch {
+            launch {
+                repository.isDarkTheme.collect { isDark ->
+                    Log.d("viewmodel", "loadSettingFromRepository: $isDark")
+                    _uiState.update { it.copy(isDarkTheme = isDark) }
+                    Log.d("viewmodel", "loadSettingFromRepository: ${uiState.value} ")
+                }
+            }
+
+            launch {
+                repository.isBiometricLock.collect { isBiometric ->
+                    _uiState.update { it.copy(isBiometricEnabled = isBiometric) }
+                }
+            }
+
+            launch {
+                repository.isSyncEnabled.collect { isSync ->
+                    _uiState.update { it.copy(isSyncEnabled = isSync) }
+                }
+            }
+
+            launch {
+                repository.fontSize.collect { fontsize ->
+                    val fontSizeEnum = when (fontsize) {
+                        "SMALL"  -> FontSize.SMALL
+                        "LARGE"  -> FontSize.LARGE
+                        "XLARGE" -> FontSize.XLARGE
+                        else     -> FontSize.MEDIUM
+                    }
+                    _uiState.update { it.copy(fontSize = fontSizeEnum) }
+                }
+            }
+        }
+
+        _uiState.value = _uiState.value.copy(isLoading = false)
+    }
+
 
     /**
      * Handle dark theme toggle
@@ -35,8 +84,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
     fun onDarkThemeChanged(enabled: Boolean) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isDarkTheme = enabled)
-            // TODO: Save to SharedPreferences or DataStore
-            // TODO: Apply theme change to entire app
+            repository.setDarkTheme(enabled)
         }
     }
 
@@ -46,8 +94,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
     fun onBiometricEnabledChanged(enabled: Boolean) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isBiometricEnabled = enabled)
-            // TODO: Save to secure storage
-            // TODO: Request biometric authentication if enabling
+            repository.setBiometricLock(enabled)
         }
     }
 
@@ -57,8 +104,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
     fun onSyncEnabledChanged(enabled: Boolean) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncEnabled = enabled)
-            // TODO: Start/stop sync service
-            // TODO: Show sync status
+            repository.setSyncEnabled(enabled)
         }
     }
 
@@ -68,7 +114,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
     fun onFontSizeChanged(fontSize: FontSize) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(fontSize = fontSize)
-            // TODO: Save preference and update app-wide text sizes
+            repository.setFontSize(fontSize.name)
         }
     }
 
@@ -189,7 +235,7 @@ class SettingsViewModel @Inject constructor() : ViewModel() {
     fun onResetSettingsRequested() {
         viewModelScope.launch {
             // TODO: Reset all settings to default
-            _uiState.value = SettingsState() // Reset to default
+            _uiState.value = SettingState() // Reset to default
             // TODO: Clear all SharedPreferences/DataStore
         }
     }

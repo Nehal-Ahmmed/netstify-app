@@ -1,8 +1,9 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,54 +17,52 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
+import com.nhbhuiyan.nestify.presentation.ui.components.DynamicUserFrameNotebook
 import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data.NotesViewModel
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import java.text.SimpleDateFormat
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NotesListScreen(navController: NavController) {
     val viewModel: NotesViewModel = hiltViewModel()
     val state = viewModel.uiState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-
+    
     // State for modern features
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
-    var viewMode by remember { mutableStateOf(ViewMode.LIST) } // LIST or GRID
+    var viewMode by remember { mutableStateOf(ViewMode.GRID) } // Default to GRID for sticky notes
     var selectedNotes by remember { mutableStateOf(emptySet<Long>()) }
     val isSelectionMode = selectedNotes.isNotEmpty()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val searchFocusRequester = remember { FocusRequester() }
+    val context = LocalContext.current
+    
+    val backgroundBitmap = remember {
+        BitmapFactory.decodeResource(context.resources, R.drawable.a2y6_21s0_220127)
+    }
 
     // Filter notes based on search
     val filteredNotes = state.value.notes.filter { note ->
-        searchQuery.isEmpty() || note.title.contains(searchQuery, ignoreCase = true) ||
-                note.content.contains(searchQuery, ignoreCase = true)
+        searchQuery.isEmpty() || note.content.contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -82,7 +81,7 @@ fun NotesListScreen(navController: NavController) {
                 )
             } else {
                 MainTopBar(
-                    title = "Notes",
+                    title = "Daily Notes",
                     isLoading = state.value.isLoading,
                     isSelectionMode = isSelectionMode,
                     selectedCount = selectedNotes.size,
@@ -132,6 +131,7 @@ fun NotesListScreen(navController: NavController) {
                     notes = filteredNotes,
                     navController = navController,
                     selectedNotes = selectedNotes,
+                    backgroundBitmap = backgroundBitmap,
                     onNoteSelected = { id ->
                         selectedNotes = if (selectedNotes.contains(id)) {
                             selectedNotes - id
@@ -145,6 +145,7 @@ fun NotesListScreen(navController: NavController) {
                     notes = filteredNotes,
                     navController = navController,
                     selectedNotes = selectedNotes,
+                    backgroundBitmap = backgroundBitmap,
                     onNoteSelected = { id ->
                         selectedNotes = if (selectedNotes.contains(id)) {
                             selectedNotes - id
@@ -193,7 +194,9 @@ fun MainTopBar(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Cursive,
+                        fontSize = 32.sp
                     )
                 )
             }
@@ -211,7 +214,6 @@ fun MainTopBar(
         },
         actions = {
             if (isSelectionMode) {
-                // Selection mode actions
                 IconButton(onClick = onSelectAll) {
                     Icon(Icons.Default.SelectAll, contentDescription = "Select all")
                 }
@@ -219,7 +221,6 @@ fun MainTopBar(
                     Icon(Icons.Default.Delete, contentDescription = "Delete selected")
                 }
             } else {
-                // Normal mode actions
                 IconButton(onClick = onSearchClick) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
                 }
@@ -306,6 +307,7 @@ fun NotesListView(
     notes: List<Note>,
     navController: NavController,
     selectedNotes: Set<Long>,
+    backgroundBitmap: Bitmap,
     onNoteSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -314,8 +316,9 @@ fun NotesListView(
         contentPadding = PaddingValues(16.dp)
     ) {
         items(notes, key = { it.id }) { note ->
-            NoteItemModern(
+            StickyNoteItem(
                 note = note,
+                bitmap = backgroundBitmap,
                 isSelected = selectedNotes.contains(note.id),
                 onClick = {
                     if (selectedNotes.isNotEmpty()) {
@@ -324,9 +327,10 @@ fun NotesListView(
                         navController.navigate(Route.NoteDetail.createRoute(note.id))
                     }
                 },
-                onLongClick = { onNoteSelected(note.id) }
+                onLongClick = { onNoteSelected(note.id) },
+                modifier = Modifier.height(250.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -336,6 +340,7 @@ fun NotesGridView(
     notes: List<Note>,
     navController: NavController,
     selectedNotes: Set<Long>,
+    backgroundBitmap: Bitmap,
     onNoteSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -346,11 +351,12 @@ fun NotesGridView(
         items(notes.chunked(2)) { rowNotes ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 rowNotes.forEach { note ->
-                    NoteGridItem(
+                    StickyNoteItem(
                         note = note,
+                        bitmap = backgroundBitmap,
                         isSelected = selectedNotes.contains(note.id),
                         onClick = {
                             if (selectedNotes.isNotEmpty()) {
@@ -360,7 +366,7 @@ fun NotesGridView(
                             }
                         },
                         onLongClick = { onNoteSelected(note.id) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).aspectRatio(1f)
                     )
                 }
                 // Add empty space if row has only one item
@@ -368,145 +374,54 @@ fun NotesGridView(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NoteItemModern(
+fun StickyNoteItem(
     note: Note,
+    bitmap: Bitmap,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
     } else {
-        MaterialTheme.colorScheme.surface
+        Color.Transparent
     }
 
-    Card(
+    Box(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            )
+            .background(containerColor, RoundedCornerShape(12.dp))
+            .padding(4.dp) // Slight padding so the selection color shows nicely behind
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            if (isSelected) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Text(
-                text = note.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = note.content,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Updated ${getRelativeTimeString(note.updatedAt)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun NoteGridItem(
-    note: Note,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-
-    Card(
-        modifier = modifier
-            .aspectRatio(1f)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            if (isSelected) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Text(
-                text = note.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = note.content,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        DynamicUserFrameNotebook(
+            frameBitmap = bitmap,
+            text = note.content,
+            onTextChange = {},
+            readOnly = true,
+            modifier = Modifier.fillMaxSize()
+        )
+        
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Selected",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(24.dp)
             )
         }
     }
@@ -522,7 +437,7 @@ fun EmptyNotesState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = Icons.Default.NoteAdd,
+            imageVector = Icons.Default.Edit,
             contentDescription = "No notes",
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -531,7 +446,7 @@ fun EmptyNotesState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = if (hasSearchQuery) "No notes found" else "No notes yet",
+            text = if (hasSearchQuery) "No notes found" else "Your Canvas is Empty",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
@@ -542,7 +457,7 @@ fun EmptyNotesState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
             text = if (hasSearchQuery) {
                 "Try different search terms or clear search"
             } else {
-                "Create your first note by tapping the + button"
+                "Create your first sticky note by tapping the + button below."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
@@ -558,19 +473,6 @@ fun EmptyNotesState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
     }
 }
 
-// Helper function (you'll need to implement this)
-fun getRelativeTimeString(timestamp: Long): String {
-    // Implement relative time string (e.g., "2 hours ago", "yesterday")
-    return "recently"
-}
-
-enum class ViewMode {
-    LIST, GRID
-}
-
-// Helper function for Instant
-// Simple version using SimpleDateFormat
-// For kotlinx.datetime.Instant
 fun getRelativeTimeString(instant: Instant): String {
     return try {
         val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
@@ -582,4 +484,8 @@ fun getRelativeTimeString(instant: Instant): String {
     } catch (e: Exception) {
         "recently"
     }
+}
+
+enum class ViewMode {
+    LIST, GRID
 }

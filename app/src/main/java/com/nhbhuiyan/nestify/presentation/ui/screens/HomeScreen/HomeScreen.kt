@@ -1,42 +1,32 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen
+
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.CategoriesSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.HeaderSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.ProductivityInsightsSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.QuickActionsSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.QuickStatsSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.RecentItemsSection
-import com.nhbhuiyan.nestify.presentation.ui.screens.home.components.SmartSuggestionsSection
 import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.data.HomeViewModel
+import com.nhbhuiyan.nestify.R
+import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.components_new.Banner
+import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.components_new.CategorySection
+import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.components_new.topBar
 
-/**
- * Main Home Screen for Nestify - Personal Note Taking App
- *
- * This screen serves as the dashboard showing:
- * - Personalized greeting and quick stats
- * - Categories with real counts from database
- * - Quick actions for productivity
- * - Smart suggestions and recent items
- * - Productivity insights and writing streak
- *
- * Uses real data from ViewModel which combines notes, links, files, and routines
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -45,127 +35,154 @@ fun HomeScreen(
 ) {
     val homeState by viewModel.homeState.collectAsState()
     val context = LocalContext.current
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-
-    // Show loading state
-    if (homeState.isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF8FAFD)),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator()
-                Text("Loading your notes...", modifier = Modifier.padding(top = 16.dp))
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    "Nestify Settings",
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.titleLarge
+                )
+                HorizontalDivider()
+                NavigationDrawerItem(
+                    label = { Text("Settings") },
+                    selected = false,
+                    onClick = { navController.navigate(Route.Settings.route) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Bookmarks") },
+                    selected = false,
+                    onClick = { navController.navigate(Route.Bookmarks.route) }
+                )
             }
         }
-        return
-    }
+    ) {
+        Scaffold(
+//            topBar = {
+//                TopAppBar(
+//                    title = { Text("Nestify", fontWeight = FontWeight.Bold) },
+//                    navigationIcon = {
+//                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+//                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+//                        }
+//                    },
+//                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+//                )
+//            },
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Route.createNote.route) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+        ) { paddingValues ->
+
+            LazyColumn(
+                modifier= Modifier
+                    .fillMaxSize()
+                    .background(color = colorResource(R.color.lightBlue))
+                    .padding(paddingValues = paddingValues)
             ) {
-                Icon(Icons.Default.Add, "Create New Note")
+                item {topBar()}
+                item {CategorySection(navController)}
+                item {Banner()}
             }
+
+//            ConstraintLayout(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .background(backgroundBrush)
+//                    .padding(paddingValues)
+//                    .padding(horizontal = 16.dp)
+//            ) {
+//                val (greetingText, statsCard, gridMenu) = createRefs()
+//
+//                Text(
+//                    text = "Welcome back,\n${homeState.userName}",
+//                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+//                    modifier = Modifier.constrainAs(greetingText) {
+//                        top.linkTo(parent.top, margin = 24.dp)
+//                        start.linkTo(parent.start)
+//                    }
+//                )
+//
+//                // Stunning stat card
+//                Card(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .constrainAs(statsCard) {
+//                            top.linkTo(greetingText.bottom, margin = 32.dp)
+//                            start.linkTo(parent.start)
+//                            end.linkTo(parent.end)
+//                        },
+//                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)),
+//                    shape = RoundedCornerShape(24.dp),
+//                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+//                ) {
+//                    Row(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(24.dp),
+//                        horizontalArrangement = Arrangement.SpaceBetween,
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        Column {
+//                            Text("Today's Notes", style = MaterialTheme.typography.labelLarge)
+//                            Text("${homeState.todaysNotesCount}", style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold))
+//                        }
+//                        Column {
+//                            Text("Recent Activities", style = MaterialTheme.typography.labelLarge)
+//                            Text("${homeState.recentActivityCount}", style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold))
+//                        }
+//                    }
+//                }
+//
+//                // Simplified actions
+//                Column(
+//                    modifier = Modifier.constrainAs(gridMenu) {
+//                        top.linkTo(statsCard.bottom, margin = 32.dp)
+//                        start.linkTo(parent.start)
+//                        end.linkTo(parent.end)
+//                        bottom.linkTo(parent.bottom)
+//                        height = Dimension.fillToConstraints
+//                    }
+//                ) {
+//                    Text("Quick Access", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+//                    Spacer(Modifier.height(16.dp))
+//
+//                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+//                        QuickAccessButton("Notes", Modifier.weight(1f)) { navController.navigate(Route.Notes.route) }
+//                        QuickAccessButton("Links", Modifier.weight(1f)) { navController.navigate(Route.Links.route) }
+//                    }
+//                    Spacer(Modifier.height(16.dp))
+//                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+//                        QuickAccessButton("Files", Modifier.weight(1f)) { navController.navigate(Route.FolderScreen.route) }
+//                        QuickAccessButton("Routines", Modifier.weight(1f)) { navController.navigate(Route.Routines.route) }
+//                    }
+//                }
+//            }
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF8FAFD)),
-            contentPadding = paddingValues,
-            state = rememberLazyListState(),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // All your existing sections remain the same
-            // They will now show REAL data from your database
-            item {
-                HeaderSection(
-                    userName = homeState.userName,
-                    currentTime = homeState.currentTime,
-                    onSearchClicked = { navController.navigate(Route.Search.route) }
-                )
-            }
+    }
+}
 
-            item {
-                QuickStatsSection(
-                    todaysNotesCount = homeState.todaysNotesCount,
-                    recentActivityCount = homeState.recentActivityCount,
-                    onStatsClicked = { Toast.makeText(context,"navigate to stats page",Toast.LENGTH_SHORT).show() }
-                )
-            }
-
-            item {
-                CategoriesSection(
-                    categories = homeState.categories,
-                    onCategoryClicked = { category ->
-                        when (category.id) {
-                            "notes" -> navController.navigate(Route.Notes.route)
-                            "links" -> navController.navigate(Route.Links.route)
-                            "files" -> navController.navigate(Route.Files.route)
-                            "routines" -> navController.navigate(Route.Routines.route)
-                            "archive" -> navController.navigate(Route.Archive.route)
-                            "favorites" -> navController.navigate(Route.Favorites.route)
-                        }
-                    }
-                )
-            }
-
-            // ... rest of your sections remain the same
-            item {
-                QuickActionsSection(
-                    quickActions = homeState.quickActions,
-                    onQuickActionClicked = { action ->
-//                        when (action.id) {
-//                            "quick_note" -> navController.navigate("create_note?type=quick")
-//                            "voice_note" -> navController.navigate("voice_note")
-//                            "photo_note" -> navController.navigate("camera_capture")
-//                            "template" -> navController.navigate("templates")
-//                        }
-                    }
-                )
-            }
-
-            item {
-                SmartSuggestionsSection(
-                    continueEditingNotes = homeState.continueEditingNotes,
-                    trendingTags = homeState.trendingTags,
-                    onNoteClicked = { noteId -> navController.navigate("note/$noteId") },
-                    onTagClicked = { tag -> navController.navigate("search?query=$tag") }
-                )
-            }
-
-            item {
-                RecentItemsSection(
-                    recentItems = homeState.recentItems,
-                    onItemClicked = { item ->
-//                        when (item.type) {
-//                            "note" -> navController.navigate("note/${item.id}")
-//                            "link" -> navController.navigate("link/${item.id}")
-//                            "file" -> navController.navigate("file/${item.id}")
-//                            "routine" -> navController.navigate("routine/${item.id}")
-//                        }
-                    }
-                )
-            }
-
-            item {
-                ProductivityInsightsSection(
-                    writingStreak = homeState.writingStreak,
-                    weeklyProgress = homeState.weeklyProgress,
-                    totalNotesCount = homeState.totalNotesCount,
-                    onInsightsClicked = { Toast.makeText(context,"navigate to insights page",Toast.LENGTH_SHORT).show() }
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
-            }
+@Composable
+fun QuickAccessButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier
+            .height(100.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
+                alpha = 0.8f
+            )
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
         }
     }
 }

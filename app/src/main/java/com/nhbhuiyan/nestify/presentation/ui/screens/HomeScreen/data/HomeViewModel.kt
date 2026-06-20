@@ -1,13 +1,12 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.data
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.domain.model.Link
 import com.nhbhuiyan.nestify.domain.model.File
-import com.nhbhuiyan.nestify.domain.model.ClassRoutine
-import com.nhbhuiyan.nestify.domain.usecases.RoutinesUsecases.GetAllClassRoutinesUsecases
 import com.nhbhuiyan.nestify.domain.usecases.FIleUsecases.GetAllFilesUseCase
 import com.nhbhuiyan.nestify.domain.usecases.Linkusecases.GetAllLinksUseCase
 import com.nhbhuiyan.nestify.domain.usecases.NoteUseCases.GetAllNotesUseCase
@@ -33,14 +32,14 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getAllFilesUseCase: GetAllFilesUseCase,
     private val getAllLinksUseCase: GetAllLinksUseCase,
-    private val getAllNotesUseCase: GetAllNotesUseCase,
-    private val getAllClassRoutineUsecase: GetAllClassRoutinesUsecases
+    private val getAllNotesUseCase: GetAllNotesUseCase
 ) : ViewModel() {
 
     private val _homeState = MutableStateFlow(HomeState())
     val homeState: StateFlow<HomeState> = _homeState.asStateFlow()
 
     init {
+        Log.d("HomeViewModel", "🔥 ViewModel initialized")
         loadAllContent()
     }
 
@@ -49,23 +48,24 @@ class HomeViewModel @Inject constructor(
      */
     private fun loadAllContent() {
         viewModelScope.launch {
+            Log.d("HomeViewModel", "🔄 Starting to load all content")
             _homeState.value = _homeState.value.copy(isLoading = true)
 
             // Combine all your data streams
             combine(
                 getAllNotesUseCase(),
                 getAllLinksUseCase(),
-                getAllFilesUseCase(),
-                getAllClassRoutineUsecase()
-            ) { notes, links, files, routines ->
+                getAllFilesUseCase()
+            ) { notes, links, files ->
+                Log.d("HomeViewModel", "✅ All data loaded: Notes=${notes.size}, Links=${links.size}, Files=${files.size}")
                 // Transform your actual domain data to UI state
                 transformToHomeState(
                     notes = notes,
                     links = links,
-                    files = files,
-                    routines = routines
+                    files = files
                 )
             }.collect { state ->
+                Log.d("HomeViewModel", "📊 State updated with ${state.categories.size} categories")
                 _homeState.value = state.copy(isLoading = false)
             }
         }
@@ -77,15 +77,14 @@ class HomeViewModel @Inject constructor(
     private fun transformToHomeState(
         notes: List<Note>,
         links: List<Link>,
-        files: List<File>,
-        routines: List<ClassRoutine>
+        files: List<File>
     ): HomeState {
         // Calculate statistics from real data
         val todaysNotesCount = calculateTodaysNotesCount(notes)
         val recentActivityCount = calculateRecentActivityCount(notes, links, files)
 
         // Create categories with REAL counts from your data
-        val categories = createCategories(notes, links, files, routines)
+        val categories = createCategories(notes, links, files)
 
         // Create recent items from actual data
         val recentItems = createRecentItems(notes, links, files)
@@ -110,7 +109,6 @@ class HomeViewModel @Inject constructor(
             notes = notes,
             links = links,
             files = files,
-            routines = routines,
 
             // UI data derived from domain data
             categories = categories,
@@ -168,14 +166,12 @@ class HomeViewModel @Inject constructor(
     private fun createCategories(
         notes: List<Note>,
         links: List<Link>,
-        files: List<File>,
-        routines: List<ClassRoutine>
+        files: List<File>
     ): List<Category> {
         return listOf(
             Category("notes", "Notes", "📝", Color(0xFF4CAF50), notes.size),
             Category("links", "Links", "🔗", Color(0xFF2196F3), links.size),
             Category("files", "Files", "📁", Color(0xFFFF9800), files.size),
-            Category("routines", "Routines", "⏰", Color(0xFF9C27B0), routines.size),
             Category("archive", "Archive", "📦", Color(0xFF795548),
                 notes.count { it.isArchived } + links.count { it.isArchived } + files.count { it.isArchived }
             ),

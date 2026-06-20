@@ -9,5 +9,6 @@ data class Note(
     val tags : List<String>,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val isBookmarked: Boolean = false
 )

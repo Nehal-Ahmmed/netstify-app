@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -44,6 +46,7 @@ private fun formatInstant(instant: Instant): String {
 @Composable
 fun LinkDetailScreen(
     link: Link,
+    isBookmarked : (Boolean) -> Unit,
     onBack: () -> Unit,
     navController: NavController,
     modifier: Modifier = Modifier
@@ -60,6 +63,18 @@ fun LinkDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            isBookmarked(!link.isBookmarked)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if(link.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Bookmark"
                         )
                     }
                 }

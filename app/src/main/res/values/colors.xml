@@ -7,12 +7,21 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="nestify_peach">#E6D0BA</color>
+    <color name="nestify_blue_gray">#A8BCC2</color>
+    <color name="nestify_sky_blue">#C7DBE3</color>
+    <color name="nestify_deep_blue">#AEC4D1</color>
+    <color name="nestify_slate">#333F48</color>
+    <color name="nestify_green">#7BB87B</color>
+    <color name="nestify_surface">#F7F9FB</color>
 
-    <color name="display_small">#FFFFFFFF</color>
-    <color name="text_medium">#FFB0B3B8</color>
-    <color name="text_title">#E4E6EB</color>
+    <color name="primary">#4A6572</color>
+    <color name="secondary">#7BB87B</color>
+    <color name="accent">#E6D0BA</color>
+
+    <!-- Legacy support for other screens -->
     <color name="body">#B0B3B8</color>
-    <color name="input_background">#3A3B3C</color>
-    <color name="placeholder">#DDDDDD</color>
-    <color name="shimmer">#414243</color>
+    <color name="lightBlue">#F7F9FB</color>
+    <color name="blue">#4A6572</color>
+    <color name="grey">#8C9199</color>
 </resources>

@@ -1,598 +1,355 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.*
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.NoteAdd
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.nhbhuiyan.nestify.domain.model.Link
+import com.nhbhuiyan.nestify.domain.model.LinkFolder
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
-import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
-import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.ViewMode
-import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.getRelativeTimeString
+import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.components.CreateFolderDialog
+import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.components.CreateLinkDialog
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.data.LinksViewmodel
+import com.nhbhuiyan.nestify.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinksListScreen(navController: NavController) {
     val viewModel: LinksViewmodel = hiltViewModel()
-    val state = viewModel.uiState.collectAsState()
-
+    val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    
+    var selectedFolderId by remember { mutableStateOf<Long?>(null) }
+    var showCreateLinkDialog by remember { mutableStateOf(false) }
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
-    var viewMode by remember { mutableStateOf(ViewMode.LIST) }
-    var selectedLinks by remember { mutableStateOf(emptySet<Long>()) }
-    val isSelectionMode = selectedLinks.isNotEmpty()
 
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val searchFocusRequester = remember { FocusRequester() }
+    val filteredLinks = state.links.filter { 
+        (selectedFolderId == null || it.folderId == selectedFolderId) &&
+        (it.title?.contains(searchQuery, ignoreCase = true) == true || 
+         it.url.contains(searchQuery, ignoreCase = true))
+    }
 
-    val filteredLinks = state.value.links.filter { link ->
-        searchQuery.isEmpty() || link.title?.contains(
-            searchQuery,
-            ignoreCase = true
-        ) ?: false || link.description?.contains(searchQuery, ignoreCase = true) ?: false
+    if (showCreateLinkDialog) {
+        CreateLinkDialog(
+            folders = state.folders,
+            onDismiss = { showCreateLinkDialog = false },
+            onCreateLink = { title, desc, url, folderId ->
+                viewModel.createLink(title, desc, url, folderId)
+                showCreateLinkDialog = false
+            }
+        )
+    }
+
+    if (showCreateFolderDialog) {
+        CreateFolderDialog(
+            onDismiss = { showCreateFolderDialog = false },
+            onCreateFolder = { name, color ->
+                viewModel.createFolder(name, color)
+                showCreateFolderDialog = false
+            }
+        )
     }
 
     Scaffold(
+        containerColor = NestifySurface,
         topBar = {
-            if (isSearchActive) {
-                SearchTopBar(
-                    searchQuery = searchQuery,
-                    onSearchQuerychange = { searchQuery = it },
-                    onSearchActiveChange = { isSearchActive = !isSearchActive },
-                    focusRequester = searchFocusRequester,
-                    onClose = {
-                        isSearchActive = false
-                        searchQuery = ""
-                        keyboardController?.hide()
-                    }
-                )
-            } else {
-                MainTopBar(
-                    title = "Links",
-                    isLoading = state.value.isLoading,
-                    isSelectionMode = isSelectionMode,
-                    selectedCount = selectedLinks.size,
-                    onBackClick = { navController.popBackStack() },
-                    onSearchClick = {
-                        isSearchActive = true
-                    },
-                    onViewModeChange = {
-                        viewMode = if (viewMode == ViewMode.GRID) ViewMode.LIST else ViewMode.GRID
-                    },
-                    onSelectAllClick = {
-                        selectedLinks = if (selectedLinks.size == filteredLinks.size) {
-                            emptySet()
-                        } else {
-                            filteredLinks.map { it.id }.toSet()
-                        }
-                    },
-                    onDeleteSelected = {
-                        selectedLinks.forEach { id ->
-                            viewModel.deleteLinkById(id)
-                        }
-                        selectedLinks = emptySet()
-                    },
-                    onClearSelection = {
-                        selectedLinks = emptySet()
-                    }
-                )
-            }
+            LinksHeader(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onBackClick = { navController.popBackStack() }
+            )
         },
         floatingActionButton = {
-            if (!isSelectionMode) {
-                FloatingActionButton(
-                    onClick = {
-                        viewModel.createLink("test Link", "this is a test link", "www.google.com")
-                    }
+            FloatingActionButton(
+                onClick = { showCreateLinkDialog = true },
+                containerColor = NestifySlate,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, "Add Link")
+            }
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            // Folders Section
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "add link")
+                    Text(
+                        "Categories",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = NestifySlate
+                    )
+                    TextButton(onClick = { showCreateFolderDialog = true }) {
+                        Text("+ New Folder", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+                
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        FolderPill(
+                            name = "All Links",
+                            isSelected = selectedFolderId == null,
+                            onClick = { selectedFolderId = null }
+                        )
+                    }
+                    items(state.folders) { folder ->
+                        FolderPill(
+                            name = folder.name,
+                            isSelected = selectedFolderId == folder.id,
+                            onClick = { selectedFolderId = folder.id }
+                        )
+                    }
                 }
             }
-        }
-    ) { padding ->
-        if (state.value.isLoading) {
-            LoadingShimmer()
-        } else {
-            when(viewMode){
-                ViewMode.LIST -> LinksListView(
-                    links = filteredLinks,
-                    navController = navController,
-                    selectedLinks= selectedLinks,
-                    onLinkSelected = {id ->
-                        selectedLinks= if(selectedLinks.contains(id)){
-                            selectedLinks - id
-                        }else{
-                            selectedLinks+ id
-                        }
-                    },
-                    modifier = Modifier.padding(padding)
-                )
-                ViewMode.GRID -> LinksGridView(
-                    links = filteredLinks,
-                    navController = navController,
-                    selectedLinks = selectedLinks,
-                    onLinkSelected = {id->
-                        selectedLinks = if(selectedLinks.contains(id)) {
-                            selectedLinks - id
-                        }else{
-                            selectedLinks + id
-                        }
-                    },
-                    modifier = Modifier.padding(padding)
-                )
-            }
-        }
 
-        if(filteredLinks.isEmpty() && !state.value.isLoading) {
-            EmptyLinksState(
-                hasSearchQuery = searchQuery.isNotEmpty(),
-                onClearSearch = { searchQuery = "" }
-            )
-        }
-    }
-}
-
-
-@Composable
-fun EmptyLinksState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.NoteAdd,
-            contentDescription = "No Links found",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = if (hasSearchQuery) "No links found" else "No links yet",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = if (hasSearchQuery) {
-                "Try different search terms or clear search"
-            } else {
-                "Create your first link by tapping the + button"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center
-        )
-
-        if (hasSearchQuery) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onClearSearch) {
-                Text("Clear Search")
-            }
-        }
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MainTopBar(
-    title: String,
-    isLoading: Boolean,
-    isSelectionMode: Boolean,
-    selectedCount: Int,
-    onBackClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onViewModeChange: () -> Unit,
-    onSelectAllClick: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onClearSelection: () -> Unit
-) {
-    CenterAlignedTopAppBar(
-        title = {
-            if (isSelectionMode) {
+            // Links Section
+            item {
                 Text(
-                    text = "$selectedCount selected",
+                    "Your Collection",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    )
+                    fontWeight = FontWeight.Bold,
+                    color = NestifySlate,
+                    modifier = Modifier.padding(start = 24.dp, top = 32.dp, bottom = 16.dp)
                 )
             }
-        },
-        navigationIcon = {
-            if (isSelectionMode) {
-                IconButton(
-                    onClick = onClearSelection
-                ) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear selection")
-                }
-            } else {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+
+            if (filteredLinks.isEmpty()) {
+                item {
+                    EmptyCollectionState()
                 }
             }
-        },
-        actions = {
-            if (isSelectionMode) {
-                IconButton(onClick = onSelectAllClick) {
-                    Icon(Icons.Default.SelectAll, contentDescription = "Select all")
-                }
-                IconButton(onClick = onDeleteSelected) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete selected")
-                }
-            } else {
-                IconButton(onClick = onSearchClick) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                }
-                IconButton(onClick = onViewModeChange) {
-                    Icon(
-                        imageVector = Icons.Default.Dashboard,
-                        contentDescription = "Change view mode"
-                    )
-                }
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
+
+            items(filteredLinks) { link ->
+                ModernLinkCard(
+                    link = link,
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link.url))
+                        context.startActivity(intent)
+                    },
+                    onDelete = { viewModel.deleteLinkById(link.id) }
+                )
             }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface
-        )
-    )
+        }
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchTopBar(
+fun LinksHeader(
     searchQuery: String,
-    onSearchQuerychange: (String) -> Unit,
-    onSearchActiveChange: (Boolean) -> Unit,
-    focusRequester: FocusRequester,
-    onClose: () -> Unit
+    onSearchQueryChange: (String) -> Unit,
+    onBackClick: () -> Unit
 ) {
-    val keyboardcontroller = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboardcontroller?.show()
-    }
-
-    CenterAlignedTopAppBar(
-        title = {
-            TextField(
-                value = searchQuery,
-                onValueChange = onSearchQuerychange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
-                placeholder = { Text("Search notes...") },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(
-                        alpha = 0.5f
-                    )
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = { keyboardcontroller?.hide() }
-                )
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            }
-        },
-        actions = {
-            if (searchQuery.isNotEmpty()) {
-                IconButton(onClick = { onSearchQuerychange("") }) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear search")
-                }
-            }
-        }
-    )
-}
-
-@Composable
-fun LinksListView(
-    links: List<Link>,
-    navController: NavController,
-    selectedLinks: Set<Long>,
-    onLinkSelected: (Long) -> Unit,
-    modifier: Modifier,
-
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+            .background(NestifyGradients.meshGradient())
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(links, key = { it.id }) { link ->
-
-            LinkListItemModern(
-                link = link,
-                isSelected = selectedLinks.contains(link.id),
-                onClick = {
-                    if (selectedLinks.isNotEmpty()) {
-                        onLinkSelected(link.id)
-                    } else {
-                        navController.navigate(route = Route.LinkDetail.createRoute(link.id))
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                     }
-                },
-                onLongClick = { onLinkSelected(link.id) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Smart Links",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+                Icon(Icons.Default.Link, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(32.dp))
+            }
+            
+            // Modern Search Bar in Header
+            Surface(
+                color = Color.White.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Search your links...", color = Color.White.copy(alpha = 0.7f)) },
+                    modifier = Modifier.fillMaxSize(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = Color.White
+                    ),
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.White) }
+                )
+            }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LinkListItemModern(
-    link: Link,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-    } else {
-        MaterialTheme.colorScheme.surface
+fun FolderPill(name: String, isSelected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        color = if (isSelected) NestifySlate else Color.White,
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, if (isSelected) NestifySlate else Color.LightGray.copy(alpha = 0.4f)),
+        modifier = Modifier.height(44.dp)
+    ) {
+        Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+            Text(
+                name,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else Color.Gray
+            )
+        }
     }
+}
+
+@Composable
+fun ModernLinkCard(link: Link, onClick: () -> Unit, onDelete: () -> Unit) {
+    var showMenu by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = 24.dp, vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            if (isSelected) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Text(
-                text = link.title ?: link.url,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = link.description ?: link.url,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Updated ${getRelativeTimeString(link.updatedAt)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-
-@Composable
-fun LinksGridView(
-    links: List<Link>,
-    navController: NavController,
-    selectedLinks: Set<Long>,
-    onLinkSelected: (Long) -> Unit,
-    modifier: Modifier,
-) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(links.chunked(2)) { rowNotes ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column {
+            // Preview Image or Placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp)
+                    .background(getRandomGradient(link.url.length))
             ) {
-                rowNotes.forEach { link ->
-                    LinkGridItemModern(
-                        link = link,
-                        isSelected = selectedLinks.contains(link.id),
-                        onClick = {
-                            if (selectedLinks.isNotEmpty()) {
-                                onLinkSelected(link.id)
-                            } else {
-                                navController.navigate(route = Route.LinkDetail.createRoute(link.id))
-                            }
-                        },
-                        onLongClick = { onLinkSelected(link.id) },
-                        modifier = Modifier.weight(1f)
+                if (link.previewImageUrl != null) {
+                    AsyncImage(
+                        model = link.previewImageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Link,
+                        null,
+                        modifier = Modifier.size(56.dp).align(Alignment.Center),
+                        tint = Color.White.copy(alpha = 0.3f)
                     )
                 }
-                if (rowNotes.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
+                
+                // Floating Action Menu on Card
+                Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                    IconButton(
+                        onClick = { showMenu = true },
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape).size(32.dp)
+                    ) {
+                        Icon(Icons.Default.MoreVert, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = { onDelete(); showMenu = false },
+                            leadingIcon = { Icon(Icons.Default.Delete, null) }
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            // Link Info
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = link.title ?: link.url,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = NestifySlate,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = link.domain,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = link.description ?: "Click to explore this resource on ${link.domain}.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
 
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LinkGridItemModern(
-    link: Link,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-
-    Card(
-        modifier = modifier
-            .aspectRatio(1f)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+fun EmptyCollectionState() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp)
-        ) {
-            if (isSelected) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Text(
-                text = link.title ?: link.url,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = link.description ?: link.url,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Updated ${getRelativeTimeString(link.updatedAt)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
+        Icon(Icons.Default.Inbox, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
+        Spacer(Modifier.height(16.dp))
+        Text("Your collection is empty", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
     }
+}
+
+fun getRandomGradient(seed: Int): Brush {
+    val gradients = listOf(
+        Brush.linearGradient(listOf(Color(0xFF4A6572), Color(0xFFAEC4D1))),
+        Brush.linearGradient(listOf(Color(0xFFE6D0BA), Color(0xFFC7DBE3))),
+        Brush.linearGradient(listOf(Color(0xFF333F48), Color(0xFF4A6572))),
+        Brush.linearGradient(listOf(Color(0xFFE6D0BA), Color(0xFF333F48))),
+        Brush.linearGradient(listOf(Color(0xFFFDE8E9), Color(0xFFE6D0BA)))
+    )
+    return gradients[seed % gradients.size]
 }

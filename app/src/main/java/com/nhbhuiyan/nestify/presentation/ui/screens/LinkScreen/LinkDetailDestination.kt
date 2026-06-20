@@ -23,7 +23,10 @@ fun LinkDetailDestination(navController: NavController, viewModel: LinksViewmode
         LinkDetailScreen(
             link=it,
             navController = navController,
-            onBack = {navController.popBackStack()}
+            onBack = {navController.popBackStack()},
+            isBookmarked = {isBookmarked ->
+              viewModel.bookmarkLink(linkId = it.id, isBookmarked = isBookmarked)
+            }
         )
     } ?: run { LoadingShimmer() }
 }

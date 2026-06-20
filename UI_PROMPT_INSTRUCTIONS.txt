@@ -1,0 +1,26 @@
+# 🎨 Nestify Professional UI Design Principles
+
+As a software engineer with 20 years of experience, every UI component I build for Nestify must adhere to these foundational mandates to ensure a world-class, professional, and stunning user experience.
+
+## 1. Aesthetic Excellence
+*   **Immersive Gradients**: Utilize `NestifyGradients.meshGradient()` for high-impact surfaces (Hero sections, Headers).
+*   **Sophisticated Surfaces**: Use clean, white or slightly off-white (`NestifySurface`) backgrounds with subtle shadow elevations (8.dp - 16.dp) to create depth.
+*   **Consistent Radii**: Use large corner radii (24.dp - 32.dp) for cards and containers to maintain a modern, "soft" professional feel.
+
+## 2. Information Architecture
+*   **Systematic Hierarchy**: Every screen must have a clear "Hero" or "Header" section, followed by logically grouped content with bold `SectionTitles`.
+*   **Visual Badging**: Use color-coded badges (Final, AI/ML, High Priority) to provide instant context without reading.
+*   **Density & Spacing**: Maintain generous white space (20.dp - 24.dp horizontal padding) to prevent clutter while ensuring high data density within rows and cards.
+
+## 3. Interaction & Motion
+*   **Tactile Feedback**: Every clickable element must have a clear surface reaction (ripples, scale changes).
+*   **Smooth Transitions**: Use `AnimatedVisibility` and `slideIn/Out` for dynamic content to make the app feel "alive."
+*   **Action Context**: Use `ExtendedFloatingActionButton` for primary actions, ensuring the text clearly describes the "Next Step."
+
+## 4. Technical Rigor
+*   **Type Safety**: Always use robust data models (Models) to drive the UI. No "just strings" where a structured object is better.
+*   **Scalability**: Design components to handle "empty states," "loading states," and "overflow" (e.g., `TextOverflow.Ellipsis`).
+*   **Separation of Concerns**: Keep UI components (Screens) distinct from data logic (ViewModels/Models).
+
+---
+*Always refer to this document before starting any new UI task.*

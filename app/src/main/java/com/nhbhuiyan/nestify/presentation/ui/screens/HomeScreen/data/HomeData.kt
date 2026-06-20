@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.domain.model.Link
 import com.nhbhuiyan.nestify.domain.model.File
-import com.nhbhuiyan.nestify.domain.model.ClassRoutine
 
 /**
  * Data classes for Home Screen state management
@@ -26,7 +25,6 @@ data class HomeState(
     val notes: List<Note> = emptyList(),
     val links: List<Link> = emptyList(),
     val files: List<File> = emptyList(),
-    val routines: List<ClassRoutine> = emptyList(),
 
     // UI specific data derived from real data
     val categories: List<Category> = emptyList(),
@@ -73,7 +71,7 @@ data class NoteItem(
 // Recent item for UI display
 data class RecentItem(
     val id: String,
-    val type: String, // "note", "link", "file", "routine"
+    val type: String, // "note", "link", "file"
     val title: String,
     val subtitle: String,
     val timestamp: String,

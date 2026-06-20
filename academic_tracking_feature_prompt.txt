@@ -1,0 +1,23 @@
+Please act as an expert software architect and product designer. I need you to design and plan a comprehensive "Academic Tracking and CGPA Management" feature. Please focus purely on the business logic, data models, and user flows without mentioning any specific programming languages, frameworks, or technologies.
+
+The system needs to support the following core functionalities:
+
+1. Current Term & Subject Management:
+- Track the student's current academic state (e.g., current level, year, or term).
+- Maintain a dynamic list of currently enrolled subjects for the active term.
+- Track the specific credit weight (credit hours) for each subject.
+
+2. Continuous Assessment & Target Tracking:
+- Record and manage Class Test (CT) marks or other continuous assessment scores.
+- Calculate and display "Needed Marks" (the required score in upcoming final written exams to achieve a target grade or GPA).
+
+3. CGPA Calculator & Tracking:
+- Track and display the current overall CGPA.
+- Provide a dynamic "CGPA Calculator" where the user can input their actual or expected final written exam grades to instantly calculate the final GPA for that specific term/level.
+
+4. Dashboards & History:
+- A centralized "Main Dashboard" where the current active term's summary, needed marks, and real-time CGPA are saved and easily viewable.
+- A dedicated "CGPA Dashboard" for a high-level overview of academic performance.
+- A "Past History" section that archives and displays performance records from previously completed levels and terms.
+
+Please provide a structured breakdown of the necessary features, data entities, and the step-by-step user flow to achieve this.

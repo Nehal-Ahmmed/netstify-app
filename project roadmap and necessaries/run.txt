@@ -1,0 +1,8 @@
+# First build it:
+.\gradlew assembleDebug
+
+# Then deploy it:
+android run --device=eec7c7f0000 --apks=app\build\outputs\apk\debug\app-debug.apk
+
+
+

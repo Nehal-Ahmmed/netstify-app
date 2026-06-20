@@ -6,15 +6,16 @@ import kotlinx.datetime.Instant
 
 @Entity(tableName = "links")
 data class LinkEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long =0 ,
-    val url : String,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val url: String,
     val domain: String,
-    val title : String? = null,
-    val description : String? = null,
-    val previewImageUrl : String? = null,
-    val isPreviewFetched : Boolean = false,
-
-    override val createdAt : Instant,
-    override val updatedAt : Instant,
-    override val isArchived : Boolean = false
-) : BaseContentEntity(createdAt = createdAt, updatedAt= updatedAt , isArchived = isArchived)
+    val title: String? = null,
+    val description: String? = null,
+    val previewImageUrl: String? = null,
+    val isPreviewFetched: Boolean = false,
+    val isBookmarked: Boolean = false,
+    val folderId: Long? = null,
+    override val createdAt: Instant,
+    override val updatedAt: Instant,
+    override val isArchived: Boolean = false
+) : BaseContentEntity(createdAt = createdAt, updatedAt = updatedAt, isArchived = isArchived)

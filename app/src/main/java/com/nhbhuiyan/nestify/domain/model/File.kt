@@ -10,8 +10,21 @@ data class File(
     val fileType: String,
     val mimeType: String,
     val fileSize: Long,
+    val folderId: Long,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val isArchived: Boolean = false
+    val isArchived: Boolean = false,
+    val isBookmarked: Boolean = false
 
+)
+
+data class FileFolder(
+    val id: Long = 0,
+    val name: String,
+    val color: Int,
+    val isCustom: Boolean = true,
+    val category: String,
+    val icon: String,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )

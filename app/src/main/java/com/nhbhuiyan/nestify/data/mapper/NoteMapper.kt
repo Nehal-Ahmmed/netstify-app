@@ -11,7 +11,8 @@ fun NoteEntity.toNote() : Note {
         createdAt = createdAt,
         updatedAt = updatedAt,
         isArchived = isArchived,
-        tags = tags
+        tags = tags,
+        isBookmarked = isBookmarked
     )
 }
 
@@ -23,6 +24,7 @@ fun Note.toNoteEntity() : NoteEntity{
         createdAt = createdAt,
         updatedAt = updatedAt,
         isArchived = isArchived,
-        tags = tags
+        tags = tags,
+        isBookmarked = isBookmarked
     )
 }

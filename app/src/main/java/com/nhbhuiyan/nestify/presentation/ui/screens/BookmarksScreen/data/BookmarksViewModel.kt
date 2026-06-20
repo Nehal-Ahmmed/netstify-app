@@ -36,7 +36,9 @@ class BookmarksViewModel @Inject constructor(
                 getAllFilesUseCase()
             ) { noteList, linkList, fileList ->
 
-                val noteBookmarks = noteList.map { note ->
+                val noteBookmarks = noteList
+                    .filter { it.isBookmarked }
+                    .map { note ->
                     BookmarkItem(
                         id = note.id.toString(),
                         type = "note",
@@ -48,7 +50,9 @@ class BookmarksViewModel @Inject constructor(
                     )
                 }
 
-                val linkBookmarks = linkList.map { link ->
+                val linkBookmarks = linkList
+                    .filter { it.isBookmarked }
+                    .map { link ->
                     BookmarkItem(
                         id = link.id.toString(),
                         type = "link",
@@ -60,7 +64,9 @@ class BookmarksViewModel @Inject constructor(
                     )
                 }
 
-                val fileBookmarks = fileList.map { file ->
+                val fileBookmarks = fileList
+                    .filter { it.isBookmarked }
+                    .map { file ->
                     BookmarkItem(
                         id = file.id.toString(),
                         type = "file",

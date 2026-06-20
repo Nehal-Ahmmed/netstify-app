@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.compose.material3.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -94,4 +95,14 @@ dependencies {
     //coil
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    //datastore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    // ConstraintLayout Compose
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
+    
+    // Biometric Authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+
+    //opencv
+    implementation("com.quickbirdstudios:opencv:4.5.3.0")
 }

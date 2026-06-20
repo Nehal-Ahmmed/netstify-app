@@ -1,0 +1,17 @@
+@echo off
+set JAVA_HOME=C:\Program Files\Java\jdk-21.0.11
+echo 🚀 Starting Nestify Build and Install...
+echo 📱 Checking connected devices...
+adb devices
+echo.
+echo 🏗️ Building APK and installing on device...
+call gradlew.bat installDebug
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo ✅ Build Successful! Launching app...
+    adb shell am start -n com.nhbhuiyan.nestify/.MainActivity
+) else (
+    echo.
+    echo ❌ Build Failed. Please check the errors above.
+)
+pause

@@ -12,6 +12,7 @@ class CreateFileUseCase @Inject constructor(
         uri: String,
         fileName: String,
         fileType: String,
+        folderId: Long,
         mimeType: String,
         fileSize: Long
     ):Long{
@@ -21,6 +22,7 @@ class CreateFileUseCase @Inject constructor(
             fileName = fileName,
             fileType = fileType,
             mimeType = mimeType,
+            folderId = folderId,
             fileSize = fileSize,
             createdAt = now,
             updatedAt = now

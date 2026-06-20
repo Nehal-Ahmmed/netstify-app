@@ -1,5 +1,12 @@
 package com.nhbhuiyan.nestify.presentation.navigation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.PhotoLibrary
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -15,7 +22,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
-import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.presentation.navigation.Components.BottomNavItem
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
@@ -24,26 +30,26 @@ import com.nhbhuiyan.nestify.presentation.ui.screens.ArchiveScreen.ArchiveScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.FacouritesScreen.FacouritesScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.FileDetailDestination
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.FileScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.FolderScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.HomeScreen.HomeScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.LinkDetailDestination
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.LinksListScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.NoteDetailDestination
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.NotesListScreen
-import com.nhbhuiyan.nestify.presentation.ui.screens.RoutineScreen.RoutineDetailDestination
-import com.nhbhuiyan.nestify.presentation.ui.screens.RoutineScreen.RoutineListScreen
-import com.nhbhuiyan.nestify.presentation.ui.screens.SearchScreen.SearchScreen
-import com.nhbhuiyan.nestify.presentation.ui.screens.bookmarks.BookmarksScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.ServiceScreen.ServiceScreen
 import com.nhbhuiyan.nestify.presentation.ui.screens.createnote.CreateNoteScreen
-import com.nhbhuiyan.nestify.presentation.ui.screens.settings.SettingsScreen
+import com.nhbhuiyan.nestify.presentation.ui.screens.schedule.ScheduleScreen
+import com.nhbhuiyan.nestify.projectplans.Presentation.screens.ProjectPlansPage
 
 @Composable
 fun InAppNav(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val items = listOf(
-        BottomNavItem(icon = R.drawable.ic_home, text = "Home"),
-        BottomNavItem(icon = R.drawable.ic_search, text = "Search"),
-        BottomNavItem(icon = R.drawable.ic_bookmark, text = "BookMark"),
-        BottomNavItem(icon = R.drawable.baseline_settings_24, text = "Settings")
+        BottomNavItem(icon = Icons.Default.Home, text = "Home"),
+        BottomNavItem(icon = Icons.Default.PhotoLibrary, text = "Gallery"),
+        BottomNavItem(icon = Icons.Default.LibraryBooks, text = "Library"),
+        BottomNavItem(icon = Icons.Default.Build, text = "Services"),
+        BottomNavItem(icon = Icons.Default.AccountCircle, text = "Profile")
     )
     var backStackState = navController.currentBackStackEntryAsState().value
     var selectedItem by rememberSaveable {
@@ -52,9 +58,10 @@ fun InAppNav(modifier: Modifier = Modifier) {
 
     selectedItem = when (backStackState?.destination?.route) {
         Route.Home.route -> 0
-        Route.Search.route -> 1
-        Route.Bookmarks.route -> 2
-        Route.Settings.route -> 3
+        Route.Gallery.route -> 1
+        Route.Library.route -> 2
+        Route.Services.route -> 3
+        Route.Profile.route -> 4
 
         else -> 0
     }
@@ -70,20 +77,10 @@ fun InAppNav(modifier: Modifier = Modifier) {
                 onItemClick = { index ->
                     when (index) {
                         0 -> navigateToTab(navController = navController, route = Route.Home.route)
-                        1 -> navigateToTab(
-                            navController = navController,
-                            route = Route.Search.route
-                        )
-
-                        2 -> navigateToTab(
-                            navController = navController,
-                            route = Route.Bookmarks.route
-                        )
-
-                        3 -> navigateToTab(
-                            navController = navController,
-                            route = Route.Settings.route
-                        )
+                        1 -> navigateToTab(navController = navController, route = Route.Gallery.route)
+                        2 -> navigateToTab(navController = navController, route = Route.Library.route)
+                        3 -> navigateToTab(navController = navController, route = Route.Services.route)
+                        4 -> navigateToTab(navController = navController, route = Route.Profile.route)
                     }
                 }
             )
@@ -106,19 +103,21 @@ fun InAppNav(modifier: Modifier = Modifier) {
                     HomeScreen(navController)
                 }
 
-                //search
-                composable(route = Route.Search.route) {
-                    SearchScreen(navController)
+                composable(route = Route.Gallery.route) {
+                    com.nhbhuiyan.nestify.presentation.ui.screens.GalleryScreen.GalleryScreen(navController)
                 }
 
-                //Bookmarks
-                composable(route = Route.Bookmarks.route) {
-                    BookmarksScreen(navController)
+                composable(route = Route.Library.route) {
+                    com.nhbhuiyan.nestify.presentation.ui.screens.LibraryScreen.LibraryScreen(navController)
                 }
 
-                //settings
-                composable(route = Route.Settings.route) {
-                    SettingsScreen(navController)
+                composable(route = Route.Services.route) {
+                    // Placeholder for ServicesScreen
+                    ServiceScreen(navController)
+                }
+
+                composable(route = Route.Profile.route) {
+                    com.nhbhuiyan.nestify.presentation.ui.screens.ProfileScreen.ProfileScreen(navController)
                 }
             }
 
@@ -135,27 +134,63 @@ fun InAppNav(modifier: Modifier = Modifier) {
             }
 
             //links
-            composable(route = Route.Links.route) {
-                LinksListScreen(navController)
+            composable(route = Route.LinkCategories.route) {
+                com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.LinkCategoriesScreen(navController)
+            }
+            composable(route = Route.CategorySpreadSheet.route) { backStackEntry ->
+                val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
+                com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.CategorySpreadSheetScreen(navController, categoryId)
+            }
+            composable(route = Route.LinkGroupDetail.route) { backStackEntry ->
+                val groupId = backStackEntry.arguments?.getString("groupId") ?: ""
+                com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.LinkGroupDetailScreen(navController, groupId)
             }
             composable(route = Route.LinkDetail.route) {
                 LinkDetailDestination(navController)
             }
 
-            //files
+            //project plans
+            composable(route = Route.ProjectPlans.route) {
+                com.nhbhuiyan.nestify.presentation.ui.screens.ProjectPlanner.ProjectPlannerScreen(navController)
+            }
+            composable(route = Route.ProjectPlanDetail.route) { backStackEntry ->
+                val planId = backStackEntry.arguments?.getString("planId") ?: ""
+                com.nhbhuiyan.nestify.presentation.ui.screens.ProjectPlanner.ProjectPlanDetailScreen(navController, planId)
+            }
+
+            //schedule
+            composable(route = Route.Schedule.route) {
+                ScheduleScreen()
+            }
+
+            //exam planner
+            composable(route = Route.ExamPlanner.route) {
+                com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner.ExamPlannerScreen(navController)
+            }
+            composable(route = Route.ExamDetail.route) { backStackEntry ->
+                val subjectName = backStackEntry.arguments?.getString("subjectName") ?: ""
+                com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner.ExamDetailScreen(navController, subjectName)
+            }
+
+            //my projects
+            composable(route = Route.MyProjects.route) {
+                com.nhbhuiyan.nestify.presentation.ui.screens.MyProjects.MyProjectsScreen(navController)
+            }
+            composable(route = Route.ProjectDetail.route) {
+                com.nhbhuiyan.nestify.presentation.ui.screens.MyProjects.ProjectDetailScreen(navController)
+            }
+
+
+            //files and folders
+            composable(route = Route.FolderScreen.route){
+                FolderScreen(navController = navController)
+            }
+
             composable(route = Route.Files.route) {
                 FileScreen(navController)
             }
             composable(route = Route.FileDetail.route) {
                 FileDetailDestination(navController)
-            }
-
-            //routines
-            composable(route = Route.Routines.route) {
-                RoutineListScreen(navController = navController)
-            }
-            composable(route = Route.RoutineDetail.route) {
-                RoutineDetailDestination(navController = navController)
             }
 
             //archive

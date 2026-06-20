@@ -6,10 +6,11 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import com.nhbhuiyan.nestify.data.local.entity.ClassRoutineEntity
 import com.nhbhuiyan.nestify.data.local.entity.FileEntity
+import com.nhbhuiyan.nestify.data.local.entity.FileFolderEntity
 import com.nhbhuiyan.nestify.data.local.entity.LinkEntity
 import com.nhbhuiyan.nestify.data.local.entity.NoteEntity
+import com.nhbhuiyan.nestify.domain.model.File
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -49,21 +50,9 @@ interface ContentDao {
     @Query("select * from files where id= :id")
     suspend fun getFileById(id: Long ) : FileEntity?
 
-    @Query("delete from files where id = :id")
-    suspend fun deleteFile(id: Long)
+    @Query("delete from files where id= :id")
+    suspend fun deletefile(id: Long)
 
-    //class routine
-    @Insert
-    suspend fun insertRoutine(classRoutine: ClassRoutineEntity) : Long
-
-    @Delete
-    suspend fun deleteRoutine(classRoutine: ClassRoutineEntity)
-
-    @Query("select * from class_routines")
-    fun getAllRoutines() : Flow<List<ClassRoutineEntity>>
-
-    @Query("select * from class_routines where id= :id")
-    suspend fun getRoutineById(id: Long) : ClassRoutineEntity
 
     //commonOperations
     @Query("select * from notes where title like :query or content like :query")
@@ -75,5 +64,33 @@ interface ContentDao {
     @Query("select * from files where fileName like :query")
     fun searchFiles(query : String) : Flow<List<FileEntity>>
 
+    @Query("update notes set isBookmarked = :bookmarked where id = :noteId")
+    suspend fun bookmarkNote(noteId: Long, bookmarked: Boolean)
 
+    @Query("update links set isBookmarked = :bookmarked where id = :id")
+    suspend fun bookmarkLink(id: Long, bookmarked: Boolean)
+
+    //file folder
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFileFolder(fileFolderEntity: FileFolderEntity) : Long
+
+    @Query("select * from file_folders where category = :category Order by name")
+    fun getFoldersByCategory(category: String) : Flow<List<FileFolderEntity>>
+
+    //file operations
+    @Query("select * from files where folderId = :folderId order by createdAt desc")
+    fun getFilesByFolder(folderId: Long) : Flow<List<FileEntity>>
+
+    // Link Folder operations
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLinkFolder(folder: com.nhbhuiyan.nestify.data.local.entity.LinkFolderEntity): Long
+
+    @Query("select * from link_folders order by name")
+    fun getAllLinkFolders(): Flow<List<com.nhbhuiyan.nestify.data.local.entity.LinkFolderEntity>>
+
+    @Query("delete from link_folders where id = :id")
+    suspend fun deleteLinkFolder(id: Long)
+
+    @Query("select * from links where folderId = :folderId order by createdAt desc")
+    fun getLinksByFolder(folderId: Long): Flow<List<LinkEntity>>
 }

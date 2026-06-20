@@ -3,15 +3,14 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
-import com.nhbhuiyan.nestify.presentation.viewModel.FileViewModel
+import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.data.FileViewModel
 
 @Composable
 fun FileDetailDestination(navController: NavController, viewModel: FileViewModel = hiltViewModel()) {
-    val state = viewModel.uiState.collectAsState()
+    val state = viewModel.fileUiState.collectAsState()
     val backStackeEntry = navController.currentBackStackEntry
     val fileId = backStackeEntry?.arguments?.getString("fileId")?.toLongOrNull()
 

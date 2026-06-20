@@ -1,5 +1,6 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.settings
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,18 +17,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.nhbhuiyan.nestify.domain.model.FontSize
+import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController) {
     val viewModel: SettingsViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    Log.d("SettingsScreen", "uiState: $uiState")
 
-    // State for settings options
-    var darkThemeEnabled by remember { mutableStateOf(uiState.isDarkTheme) }
-    var biometricEnabled by remember { mutableStateOf(uiState.isBiometricEnabled) }
-    var syncEnabled by remember { mutableStateOf(uiState.isSyncEnabled) }
-    var fontSize by remember { mutableStateOf(uiState.fontSize) }
+
 
     Scaffold(
         topBar = {
@@ -48,6 +48,11 @@ fun SettingsScreen(navController: NavController) {
             )
         }
     ) { padding ->
+
+        if(uiState.isLoading){
+            LoadingShimmer()
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -70,9 +75,8 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.DarkMode,
                     trailingContent = {
                         Switch(
-                            checked = darkThemeEnabled,
+                            checked = uiState.isDarkTheme,
                             onCheckedChange = {
-                                darkThemeEnabled = it
                                 viewModel.onDarkThemeChanged(it)
                             }
                         )
@@ -87,10 +91,12 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.TextFields,
                     trailingContent = {
                         Text(
-                            text = when (fontSize) {
+                            text = when (uiState.fontSize) {
                                 FontSize.SMALL -> "Small"
                                 FontSize.MEDIUM -> "Medium"
                                 FontSize.LARGE -> "Large"
+                                FontSize.XLARGE -> "Extra Large"
+                                else -> "Medium"
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
@@ -118,9 +124,8 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.Fingerprint,
                     trailingContent = {
                         Switch(
-                            checked = biometricEnabled,
+                            checked = uiState.isBiometricEnabled,
                             onCheckedChange = {
-                                biometricEnabled = it
                                 viewModel.onBiometricEnabledChanged(it)
                             }
                         )
@@ -161,9 +166,8 @@ fun SettingsScreen(navController: NavController) {
                     icon = Icons.Default.CloudUpload,
                     trailingContent = {
                         Switch(
-                            checked = syncEnabled,
+                            checked = uiState.isSyncEnabled,
                             onCheckedChange = {
-                                syncEnabled = it
                                 viewModel.onSyncEnabledChanged(it)
                             }
                         )
@@ -308,9 +312,8 @@ fun SettingsScreen(navController: NavController) {
         // MARK: - DIALOGS
         if (viewModel.showFontSizeSelector) {
             FontSizeDialog(
-                currentSize = fontSize,
+                currentSize = uiState.fontSize,
                 onSizeSelected = { newSize ->
-                    fontSize = newSize
                     viewModel.onFontSizeChanged(newSize)
                     viewModel.showFontSizeSelector = false
                 },
@@ -476,6 +479,7 @@ fun FontSizeDialog(
                                 FontSize.SMALL -> "Small"
                                 FontSize.MEDIUM -> "Medium"
                                 FontSize.LARGE -> "Large"
+                                FontSize.XLARGE -> "Extra Large"
                             },
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -575,21 +579,3 @@ fun ConfirmationDialog(
     )
 }
 
-// MARK: - DATA MODELS
-
-/**
- * Enum for font size options
- */
-enum class FontSize {
-    SMALL, MEDIUM, LARGE
-}
-
-/**
- * Data class for settings state
- */
-data class SettingsState(
-    val isDarkTheme: Boolean = false,
-    val isBiometricEnabled: Boolean = false,
-    val isSyncEnabled: Boolean = false,
-    val fontSize: FontSize = FontSize.MEDIUM
-)

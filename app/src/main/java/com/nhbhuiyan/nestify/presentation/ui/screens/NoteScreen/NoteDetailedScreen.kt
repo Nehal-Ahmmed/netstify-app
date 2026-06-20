@@ -8,6 +8,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -29,7 +32,8 @@ import kotlin.random.Random
 fun NoteDetailedScreen(
     note: Note,
     onBack: () -> Unit,
-    onArchiveToggle: (Boolean) -> Unit,
+    onEditClick: (Long) -> Unit,
+    onBookmarkToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy • HH:mm")
@@ -47,7 +51,9 @@ fun NoteDetailedScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Note Details") },
+                title = {
+                    Text(text = "Note Details")
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
@@ -55,16 +61,24 @@ fun NoteDetailedScreen(
                             contentDescription = "Back"
                         )
                     }
+                },
+                actions = {
+                    IconButton(onClick = {onBookmarkToggle(!note.isBookmarked)}) {
+                        Icon(
+                            imageVector = if (note.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Bookmark"
+                        )
+                    }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { onArchiveToggle(!note.isArchived) }
+                onClick = { onEditClick(note.id) }
             ) {
                 Icon(
-                    painter = if (note.isArchived) painterResource(R.drawable.baseline_unarchive_24) else painterResource(R.drawable.baseline_archive_24)  ,
-                    contentDescription = if (note.isArchived) "Unarchive" else "Archive"
+                    imageVector = Icons.Default.Edit ,
+                    contentDescription = null
                 )
             }
         }
@@ -95,12 +109,12 @@ fun NoteDetailedScreen(
                         MaterialTheme.colorScheme.tertiaryContainer
                     )
                     note.tags.forEach { tag ->
-                            val idx = (tag.hashCode().absoluteValue) % palette.size
-                            AssistChip(
-                                onClick = { /* TODO: filter by tag */ },
-                                label = { Text(tag) },
-                                colors = AssistChipDefaults.assistChipColors(containerColor = palette[idx])
-                            )
+                        val idx = (tag.hashCode().absoluteValue) % palette.size
+                        AssistChip(
+                            onClick = { /* TODO: filter by tag */ },
+                            label = { Text(tag) },
+                            colors = AssistChipDefaults.assistChipColors(containerColor = palette[idx])
+                        )
                     }
                 }
             }
