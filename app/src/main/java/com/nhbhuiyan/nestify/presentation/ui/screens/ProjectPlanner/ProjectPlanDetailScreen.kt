@@ -1,122 +1,157 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.ProjectPlanner
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.nhbhuiyan.nestify.ui.theme.*
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconTile
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
+import com.nhbhuiyan.nestify.ui.theme.NestifyGradients
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProjectPlanDetailScreen(navController: NavController, planId: String) {
     val plan = mockProjectPlans.find { it.id == planId } ?: mockProjectPlans.first()
+    val c = NestifyTheme.colors
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Strategy Detail", fontWeight = FontWeight.ExtraBold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Edit */ }) {
-                        Icon(Icons.Default.Edit, "Edit")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NestifySurface)
-            )
-        },
-        containerColor = NestifySurface
-    ) { paddingValues ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = "Strategy Detail",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                IconButtonChrome(
+                    Icons.Default.Edit,
+                    onClick = { /* Edit */ },
+                    contentDescription = "Edit",
+                )
+            },
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.screen)
+                .padding(top = Space.l, bottom = Space.xl),
+            verticalArrangement = Arrangement.spacedBy(Space.xl),
         ) {
-            // Header Stats
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(NestifySlate)
-                    .padding(24.dp)
+            // ── Dark hero header with circular progress ───────────────────────
+            NestifyCard(
+                modifier = Modifier.fillMaxWidth(),
+                background = c.surfaceDk,
+                padding = Space.xl,
             ) {
-                Column {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(NestifyGradients.darkHero())
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(plan.category.uppercase(), color = NestifyGreen, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                            Text(plan.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                        Column(Modifier.weight(1f)) {
+                            Kicker(plan.category.uppercase(), color = Color.White.copy(alpha = 0.6f))
+                            Spacer(Modifier.height(Space.xs))
+                            Text(
+                                plan.name,
+                                style = NestifyTheme.type.h1Serif,
+                                color = Color.White,
+                            )
                         }
+                        Spacer(Modifier.width(Space.l))
                         Box(contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(
                                 progress = { plan.progress },
                                 modifier = Modifier.size(60.dp),
-                                color = NestifyGreen,
+                                color = Color.White,
                                 strokeWidth = 6.dp,
-                                trackColor = Color.White.copy(alpha = 0.1f)
+                                trackColor = Color.White.copy(alpha = 0.15f)
                             )
-                            Text("${(plan.progress * 100).toInt()}%", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                            Text(
+                                "${(plan.progress * 100).toInt()}%",
+                                style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold),
+                                color = Color.White,
+                            )
                         }
                     }
                 }
             }
 
-            Column(modifier = Modifier.padding(24.dp)) {
-                PlanInfoRow(Icons.Default.Flag, "Motive", plan.motive)
-                Spacer(modifier = Modifier.height(16.dp))
-                PlanInfoRow(Icons.Default.DateRange, "Timeline", "${plan.startDate} - ${plan.deadline}")
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                Text("Technical Roadmap", fontSize = 18.sp, fontWeight = FontWeight.Black, color = NestifySlate)
-                Spacer(modifier = Modifier.height(12.dp))
+            // ── Info rows ─────────────────────────────────────────────────────
+            NestifyCard(modifier = Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.l)) {
+                    PlanInfoRow(Icons.Default.Flag, "Motive", plan.motive)
+                    PlanInfoRow(Icons.Default.DateRange, "Timeline", "${plan.startDate} - ${plan.deadline}")
+                }
+            }
+
+            // ── Technical roadmap ─────────────────────────────────────────────
+            Column {
+                SectionHead(title = "Technical Roadmap")
+                Spacer(Modifier.height(Space.m))
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s)
                 ) {
                     plan.techStack.forEach { tech ->
-                        Surface(
-                            color = NestifySkyBlue.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        ) {
-                            Text(tech, color = NestifySlate, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                        }
+                        Chip(tech, tone = ChipTone.Soft)
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text("Execution Phases", fontSize = 18.sp, fontWeight = FontWeight.Black, color = NestifySlate)
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                plan.phases.forEach { phase ->
-                    PhaseItem(phase)
-                    Spacer(modifier = Modifier.height(12.dp))
+            // ── Execution phases ──────────────────────────────────────────────
+            Column {
+                SectionHead(title = "Execution Phases")
+                Spacer(Modifier.height(Space.m))
+                Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
+                    plan.phases.forEach { phase ->
+                        PhaseItem(phase)
+                    }
                 }
             }
         }
@@ -124,51 +159,57 @@ fun ProjectPlanDetailScreen(navController: NavController, planId: String) {
 }
 
 @Composable
-fun PlanInfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String) {
+fun PlanInfoRow(icon: ImageVector, label: String, value: String) {
+    val c = NestifyTheme.colors
     Row(verticalAlignment = Alignment.Top) {
-        Icon(icon, null, tint = NestifySlate, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(16.dp))
+        IconTile(icon, size = 40.dp)
+        Spacer(Modifier.width(Space.m))
         Column {
-            Text(label, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-            Text(value, fontSize = 14.sp, color = NestifySlate, fontWeight = FontWeight.Medium)
+            Kicker(label)
+            Spacer(Modifier.height(2.dp))
+            Text(value, style = NestifyTheme.type.body, color = c.ink)
         }
     }
 }
 
 @Composable
 fun PhaseItem(phase: ProjectPhase) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECF0F1))
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    val c = NestifyTheme.colors
+    NestifyCard(modifier = Modifier.fillMaxWidth(), padding = Space.l) {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (phase.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                     null,
-                    tint = if (phase.isCompleted) NestifyGreen else Color.Gray,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (phase.isCompleted) c.ok else c.ink30,
+                    modifier = Modifier.size(22.dp)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(phase.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
+                Spacer(Modifier.width(Space.m))
+                Text(
+                    phase.name,
+                    style = NestifyTheme.type.h3Serif,
+                    color = c.ink,
+                )
             }
-            
+
             if (phase.tasks.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.m))
                 phase.tasks.forEach { task ->
                     Row(
-                        modifier = Modifier.padding(start = 32.dp, top = 4.dp),
+                        modifier = Modifier.padding(start = 34.dp, top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(modifier = Modifier.size(6.dp).background(if (task.isDone) NestifyGreen else Color.LightGray, CircleShape))
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(if (task.isDone) c.ok else c.ink30, CircleShape)
+                        )
+                        Spacer(Modifier.width(Space.s))
                         Text(
-                            task.name, 
-                            fontSize = 13.sp, 
-                            color = if (task.isDone) Color.Gray else NestifySlate,
-                            textDecoration = if (task.isDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
+                            task.name,
+                            style = NestifyTheme.type.body,
+                            color = if (task.isDone) c.ink50 else c.ink70,
+                            textDecoration = if (task.isDone) TextDecoration.LineThrough else null
                         )
                     }
                 }

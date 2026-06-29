@@ -2,51 +2,82 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.animation.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.nhbhuiyan.nestify.domain.model.Link
-import com.nhbhuiyan.nestify.domain.model.LinkFolder
-import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.GlassNavSpace
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconTile
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.OneLine
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SearchBarPill
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.components.CreateFolderDialog
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.components.CreateLinkDialog
 import com.nhbhuiyan.nestify.presentation.ui.screens.LinkScreen.data.LinksViewmodel
-import com.nhbhuiyan.nestify.ui.theme.*
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinksListScreen(navController: NavController) {
     val viewModel: LinksViewmodel = hiltViewModel()
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    
+    val c = NestifyTheme.colors
+
     var selectedFolderId by remember { mutableStateOf<Long?>(null) }
     var showCreateLinkDialog by remember { mutableStateOf(false) }
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredLinks = state.links.filter { 
+    val filteredLinks = state.links.filter {
         (selectedFolderId == null || it.folderId == selectedFolderId) &&
-        (it.title?.contains(searchQuery, ignoreCase = true) == true || 
+        (it.title?.contains(searchQuery, ignoreCase = true) == true ||
          it.url.contains(searchQuery, ignoreCase = true))
     }
 
@@ -71,89 +102,91 @@ fun LinksListScreen(navController: NavController) {
         )
     }
 
-    Scaffold(
-        containerColor = NestifySurface,
-        topBar = {
-            LinksHeader(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                onBackClick = { navController.popBackStack() }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateLinkDialog = true },
-                containerColor = NestifySlate,
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Default.Add, "Add Link")
-            }
-        }
-    ) { paddingValues ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = "Smart Links",
+            subtitle = "Your digital collection",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                IconButtonChrome(
+                    Icons.Default.Add,
+                    onClick = { showCreateLinkDialog = true },
+                    tint = c.brand,
+                    contentDescription = "Add Link",
+                )
+            },
+        )
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(bottom = 24.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = Space.screen,
+                end = Space.screen,
+                top = Space.l,
+                bottom = GlassNavSpace,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Space.m),
         ) {
+            item(key = "search") {
+                SearchBarPill(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Search your links…",
+                )
+            }
+
             // Folders Section
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Categories",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = NestifySlate
-                    )
-                    TextButton(onClick = { showCreateFolderDialog = true }) {
-                        Text("+ New Folder", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+            item(key = "folders") {
+                SectionHead(
+                    title = "Categories",
+                    actionText = "+ New Folder",
+                    onAction = { showCreateFolderDialog = true },
+                )
+                Spacer(Modifier.height(Space.m))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     item {
-                        FolderPill(
-                            name = "All Links",
-                            isSelected = selectedFolderId == null,
-                            onClick = { selectedFolderId = null }
+                        Chip(
+                            label = "All Links",
+                            tone = if (selectedFolderId == null) ChipTone.Default else ChipTone.Ghost,
+                            active = selectedFolderId == null,
+                            onClick = { selectedFolderId = null },
                         )
                     }
                     items(state.folders) { folder ->
-                        FolderPill(
-                            name = folder.name,
-                            isSelected = selectedFolderId == folder.id,
-                            onClick = { selectedFolderId = folder.id }
+                        Chip(
+                            label = folder.name,
+                            tone = if (selectedFolderId == folder.id) ChipTone.Default else ChipTone.Ghost,
+                            active = selectedFolderId == folder.id,
+                            onClick = { selectedFolderId = folder.id },
                         )
                     }
                 }
             }
 
             // Links Section
-            item {
-                Text(
-                    "Your Collection",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = NestifySlate,
-                    modifier = Modifier.padding(start = 24.dp, top = 32.dp, bottom = 16.dp)
-                )
+            item(key = "collectionHead") {
+                Spacer(Modifier.height(Space.s))
+                SectionHead(title = "Your Collection", kicker = "Saved")
             }
 
             if (filteredLinks.isEmpty()) {
-                item {
-                    EmptyCollectionState()
+                item(key = "empty") {
+                    Spacer(Modifier.height(Space.l))
+                    EmptyState(
+                        icon = Icons.Outlined.Inbox,
+                        title = "Your collection is empty",
+                        description = "Save a link to start building your digital library.",
+                        primaryLabel = "Add a link",
+                        onPrimary = { showCreateLinkDialog = true },
+                    )
                 }
             }
 
-            items(filteredLinks) { link ->
+            items(filteredLinks, key = { it.id }) { link ->
                 ModernLinkCard(
                     link = link,
                     onClick = {
@@ -168,188 +201,74 @@ fun LinksListScreen(navController: NavController) {
 }
 
 @Composable
-fun LinksHeader(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onBackClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-            .background(NestifyGradients.meshGradient())
-            .padding(horizontal = 24.dp, vertical = 16.dp)
-    ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
-                    }
-                    Text(
-                        "Smart Links",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                }
-                Icon(Icons.Default.Link, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(32.dp))
-            }
-            
-            // Modern Search Bar in Header
-            Surface(
-                color = Color.White.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    placeholder = { Text("Search your links...", color = Color.White.copy(alpha = 0.7f)) },
-                    modifier = Modifier.fillMaxSize(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White
-                    ),
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.White) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun FolderPill(name: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        color = if (isSelected) NestifySlate else Color.White,
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, if (isSelected) NestifySlate else Color.LightGray.copy(alpha = 0.4f)),
-        modifier = Modifier.height(44.dp)
-    ) {
-        Box(modifier = Modifier.padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-            Text(
-                name,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.White else Color.Gray
-            )
-        }
-    }
-}
-
-@Composable
 fun ModernLinkCard(link: Link, onClick: () -> Unit, onDelete: () -> Unit) {
+    val c = NestifyTheme.colors
     var showMenu by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
-    ) {
-        Column {
-            // Preview Image or Placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .background(getRandomGradient(link.url.length))
-            ) {
-                if (link.previewImageUrl != null) {
-                    AsyncImage(
-                        model = link.previewImageUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+    NestifyCard(modifier = Modifier.fillMaxWidth(), padding = Space.m, onClick = onClick) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.m),
+        ) {
+            // Preview thumbnail or icon tile
+            if (link.previewImageUrl != null) {
+                AsyncImage(
+                    model = link.previewImageUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(Radii.m),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                IconTile(icon = Icons.Outlined.Link, size = 56.dp, corner = 14.dp)
+            }
+
+            Column(Modifier.weight(1f)) {
+                OneLine(
+                    text = link.title ?: link.url,
+                    style = NestifyTheme.type.h3Serif,
+                    color = c.ink,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = link.domain,
+                    style = NestifyTheme.type.meta,
+                    color = c.brand,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!link.description.isNullOrBlank()) {
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        text = link.description ?: "",
+                        style = NestifyTheme.type.body,
+                        color = c.ink50,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                } else {
-                    Icon(
-                        Icons.Default.Link,
-                        null,
-                        modifier = Modifier.size(56.dp).align(Alignment.Center),
-                        tint = Color.White.copy(alpha = 0.3f)
-                    )
-                }
-                
-                // Floating Action Menu on Card
-                Box(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
-                    IconButton(
-                        onClick = { showMenu = true },
-                        modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape).size(32.dp)
-                    ) {
-                        Icon(Icons.Default.MoreVert, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            onClick = { onDelete(); showMenu = false },
-                            leadingIcon = { Icon(Icons.Default.Delete, null) }
-                        )
-                    }
                 }
             }
 
-            // Link Info
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = link.title ?: link.url,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = NestifySlate,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Box {
+                IconButtonChrome(
+                    Icons.Outlined.MoreVert,
+                    onClick = { showMenu = true },
+                    tint = c.ink50,
+                    contentDescription = "More",
                 )
-                Text(
-                    text = link.domain,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Black
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = link.description ?: "Click to explore this resource on ${link.domain}.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    containerColor = c.surface,
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Delete", style = NestifyTheme.type.body, color = c.coral) },
+                        onClick = { onDelete(); showMenu = false },
+                        leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null, tint = c.coral) },
+                    )
+                }
             }
         }
     }
-}
-
-@Composable
-fun EmptyCollectionState() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(Icons.Default.Inbox, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
-        Spacer(Modifier.height(16.dp))
-        Text("Your collection is empty", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-    }
-}
-
-fun getRandomGradient(seed: Int): Brush {
-    val gradients = listOf(
-        Brush.linearGradient(listOf(Color(0xFF4A6572), Color(0xFFAEC4D1))),
-        Brush.linearGradient(listOf(Color(0xFFE6D0BA), Color(0xFFC7DBE3))),
-        Brush.linearGradient(listOf(Color(0xFF333F48), Color(0xFF4A6572))),
-        Brush.linearGradient(listOf(Color(0xFFE6D0BA), Color(0xFF333F48))),
-        Brush.linearGradient(listOf(Color(0xFFFDE8E9), Color(0xFFE6D0BA)))
-    )
-    return gradients[seed % gradients.size]
 }

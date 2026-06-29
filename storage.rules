@@ -1,0 +1,53 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+  
+    // --- HELPER FUNCTIONS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return request.auth.token.role;
+    }
+
+    function isCR() {
+      return role() == 'cr';
+    }
+
+    function isAdmin() {
+      return role() == 'admin';
+    }
+
+    function isSuperAdmin() {
+      return role() == 'superadmin';
+    }
+
+    function isCRPlus() {
+      return isCR() || isAdmin() || isSuperAdmin();
+    }
+
+    function myDept(deptCode) {
+      return request.auth.token.deptCode == deptCode;
+    }
+
+    // --- RULES FOR PATHS ---
+
+    // PYQ Images: pyq_images/{deptCode}/{semesterId}/{topicId}/{fileName}
+    match /pyq_images/{deptCode}/{semesterId}/{topicId}/{allPaths=**} {
+      // Any signed-in student can view PYQ images
+      allow read: if isSignedIn();
+      
+      // Only CRs of the department or Admins can upload/modify images
+      allow write: if isSignedIn() && (
+        (myDept(deptCode) && isCRPlus()) || isAdmin() || isSuperAdmin()
+      );
+    }
+
+    // User profile pictures
+    match /profile_pictures/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+  }
+}

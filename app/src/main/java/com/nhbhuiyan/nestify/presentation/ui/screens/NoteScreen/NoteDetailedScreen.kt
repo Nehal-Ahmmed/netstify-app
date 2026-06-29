@@ -4,30 +4,33 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.domain.model.Note
-import kotlinx.datetime.TimeZone
-import java.time.Instant
-import java.time.ZoneId
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnSize
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyScaffold
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Space
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
-import kotlin.random.Random
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NoteDetailedScreen(
     note: Note,
@@ -36,6 +39,7 @@ fun NoteDetailedScreen(
     onBookmarkToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val c = NestifyTheme.colors
     val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy • HH:mm")
     fun formatKtxInstant(i: kotlinx.datetime.Instant): String {
         val millis = i.toEpochMilliseconds() // kotlinx -> epoch ms
@@ -46,128 +50,112 @@ fun NoteDetailedScreen(
 
     var expanded by remember { mutableStateOf(true) }
     // Animate rotation for expand/collapse icon
-    val rotation by animateFloatAsState(if (expanded) 270f else 90f, label = "")
+    val rotation by animateFloatAsState(if (expanded) 90f else 0f, label = "")
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = "Note Details")
+    val tones = listOf(ChipTone.Soft, ChipTone.Brand, ChipTone.Coral, ChipTone.Ok, ChipTone.Warn)
+
+    NestifyScaffold(
+        modifier = modifier,
+        appBar = {
+            NestifyAppBar(
+                title = "Note Details",
+                onBack = onBack,
+                trailing = {
+                    IconButtonChrome(
+                        if (note.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                        onClick = { onBookmarkToggle(!note.isBookmarked) },
+                        tint = if (note.isBookmarked) c.brand else c.ink,
+                        contentDescription = "Bookmark",
+                    )
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {onBookmarkToggle(!note.isBookmarked)}) {
-                        Icon(
-                            imageVector = if (note.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                            contentDescription = "Bookmark"
-                        )
-                    }
-                }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onEditClick(note.id) }
+    ) {
+        Spacer(Modifier.height(Space.l))
+
+        // Title
+        Text(
+            text = note.title,
+            style = NestifyTheme.type.h1Serif,
+            color = c.ink,
+        )
+
+        // Tags
+        if (note.tags.isNotEmpty()) {
+            Spacer(Modifier.height(Space.m))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                verticalArrangement = Arrangement.spacedBy(Space.s),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Edit ,
-                    contentDescription = null
-                )
+                note.tags.forEach { tag ->
+                    val idx = (tag.hashCode().absoluteValue) % tones.size
+                    Chip(label = tag, tone = tones[idx])
+                }
             }
         }
-    ) { padding ->
-        Column(
-            modifier = modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            // Title
-            Text(
-                text = note.title,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
 
-            // Tags with colors
-            if (note.tags.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Spacer(Modifier.height(Space.l))
+
+        // Expandable content card
+        NestifyCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    val palette = listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.secondaryContainer,
-                        MaterialTheme.colorScheme.tertiaryContainer
+                    Kicker("Content")
+                    IconButtonChrome(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        onClick = { expanded = !expanded },
+                        tint = c.ink50,
+                        modifier = Modifier.rotate(rotation),
+                        contentDescription = "Expand/Collapse",
                     )
-                    note.tags.forEach { tag ->
-                        val idx = (tag.hashCode().absoluteValue) % palette.size
-                        AssistChip(
-                            onClick = { /* TODO: filter by tag */ },
-                            label = { Text(tag) },
-                            colors = AssistChipDefaults.assistChipColors(containerColor = palette[idx])
-                        )
-                    }
+                }
+
+                AnimatedVisibility(visible = expanded) {
+                    Text(
+                        text = note.content,
+                        style = NestifyTheme.type.body,
+                        color = c.ink70,
+                        modifier = Modifier.padding(top = Space.s),
+                    )
                 }
             }
-
-            // Expandable content card
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Content",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        IconButton(onClick = { expanded = !expanded }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Expand/Collapse",
-                                modifier = Modifier.rotate(rotation)
-                            )
-                        }
-                    }
-
-                    AnimatedVisibility(visible = expanded) {
-                        Text(
-                            text = note.content,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Metadata
-            // Metadata (using safe formatter above)
-            Text(
-                text = "Created: ${formatKtxInstant(note.createdAt)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Updated: ${formatKtxInstant(note.updatedAt)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
         }
+
+        Spacer(Modifier.height(Space.l))
+
+        // Metadata
+        NestifyCard(modifier = Modifier.fillMaxWidth(), padding = Space.l) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                MetaRow("Created", formatKtxInstant(note.createdAt))
+                MetaRow("Updated", formatKtxInstant(note.updatedAt))
+            }
+        }
+
+        Spacer(Modifier.height(Space.l))
+
+        // Edit affordance (replaces floating FAB)
+        NButton(
+            label = "Edit note",
+            onClick = { onEditClick(note.id) },
+            leadingIcon = Icons.Default.Edit,
+            full = true,
+            size = BtnSize.Lg,
+        )
+    }
+}
+
+@Composable
+private fun MetaRow(label: String, value: String) {
+    val c = NestifyTheme.colors
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Kicker(label)
+        Text(value, style = NestifyTheme.type.meta, color = c.ink70)
     }
 }

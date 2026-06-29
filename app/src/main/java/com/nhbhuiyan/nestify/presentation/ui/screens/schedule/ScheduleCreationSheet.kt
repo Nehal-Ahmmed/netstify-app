@@ -3,8 +3,8 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.schedule
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
@@ -27,19 +30,16 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
@@ -52,14 +52,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil.compose.rememberAsyncImagePainter
 import com.nhbhuiyan.nestify.domain.model.ReminderType
 import com.nhbhuiyan.nestify.domain.model.RepeatStrategy
 import com.nhbhuiyan.nestify.domain.model.ScheduleItem
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnSize
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyInput
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 import kotlinx.datetime.Clock
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -71,9 +76,10 @@ fun ScheduleCreationSheet(
     onDismissRequest: () -> Unit,
     onSaveSchedule: (ScheduleItem) -> Unit
 ) {
+    val c = NestifyTheme.colors
     var title by remember { mutableStateOf(editingItem?.title ?: "") }
     var description by remember { mutableStateOf(editingItem?.description ?: "") }
-    
+
     // Time picker states
     val fromTimeState = rememberTimePickerState(
         initialHour = editingItem?.fromTime?.let { it / 60 } ?: 8,
@@ -88,7 +94,7 @@ fun ScheduleCreationSheet(
 
     var isAutoTask by remember { mutableStateOf(editingItem?.isAutoTask ?: false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(editingItem?.attachmentUri?.let { Uri.parse(it) }) }
-    
+
     var selectedDays by remember { mutableStateOf(editingItem?.daysOfWeek?.toSet() ?: setOf(1)) }
     var selectedDayOfMonth by remember { mutableStateOf(editingItem?.date?.toIntOrNull() ?: 1) }
     var selectedMonthOfYear by remember { mutableStateOf(editingItem?.date?.split("/")?.getOrNull(1)?.toIntOrNull() ?: 1) }
@@ -109,63 +115,59 @@ fun ScheduleCreationSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = Color.White,
-        dragHandle = { androidx.compose.material3.BottomSheetDefaults.DragHandle(color = Color(0xFFECF0F1)) },
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+        containerColor = c.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = c.hair2) },
+        shape = Radii.xl
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = Space.screen)
                 .verticalScroll(rememberScrollState())
         ) {
+            Kicker(if (editingItem == null) "New schedule" else "Edit schedule")
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (editingItem == null) "New Schedule" else "Edit Schedule",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF2C3E50)
+                text = if (editingItem == null) "Plan your productivity" else "Update this routine",
+                style = NestifyTheme.type.h2Serif,
+                color = c.ink
             )
-            Text(
-                text = "Plan your productivity",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+            Spacer(modifier = Modifier.height(Space.xl))
 
-            val textFieldColors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF2C3E50),
-                unfocusedBorderColor = Color(0xFFECF0F1),
-                focusedLabelColor = Color(0xFF2C3E50),
-                cursorColor = Color(0xFF2C3E50),
-                unfocusedContainerColor = Color(0xFFF8FAFB),
-                focusedContainerColor = Color.White
-            )
-
-            OutlinedTextField(
+            NestifyInput(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Task Title") },
-                placeholder = { Text("What are you planning?") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = textFieldColors,
-                singleLine = true
+                label = "Task Title",
+                placeholder = "What are you planning?",
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Space.l))
 
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Notes (Optional)") },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = textFieldColors
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            Text("Notes (Optional)", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.Medium), color = c.ink70)
+            Spacer(modifier = Modifier.height(Space.xs))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp)
+                    .clip(Radii.m)
+                    .background(c.surface)
+                    .border(1.5.dp, c.hair, Radii.m)
+                    .padding(Space.m14)
+            ) {
+                if (description.isEmpty()) Text("Add any details…", style = NestifyTheme.type.body, color = c.ink50)
+                BasicTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    textStyle = NestifyTheme.type.body.copy(color = c.ink),
+                    cursorBrush = SolidColor(c.brand),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(modifier = Modifier.height(Space.xl))
 
             // Time Selection Section
-            Text("Set Duration", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50), fontSize = 16.sp)
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            Text("Set Duration", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Row(modifier = Modifier.fillMaxWidth().padding(top = Space.s)) {
                 TimeBlock(
                     label = "From",
                     hour = fromTimeState.hour,
@@ -173,7 +175,7 @@ fun ScheduleCreationSheet(
                     modifier = Modifier.weight(1f),
                     onClick = { showFromTimePicker = true }
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(Space.l))
                 TimeBlock(
                     label = "To",
                     hour = toTimeState.hour,
@@ -182,123 +184,121 @@ fun ScheduleCreationSheet(
                     onClick = { showToTimePicker = true }
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Space.xl))
 
             // Reminder Settings
-            Text("Reminders", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50), fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-            
+            Text("Reminders", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Spacer(modifier = Modifier.height(Space.m))
+
             // Alarm Toggle
-            Surface(
-                color = if (alarmOn) Color(0xFFFEF5E7) else Color(0xFFF8FAFB),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(Radii.l)
+                    .background(if (alarmOn) c.warnSoft else c.surface2)
             ) {
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(16.dp).clickable { alarmOn = !alarmOn }
+                        modifier = Modifier.padding(Space.l).clickable { alarmOn = !alarmOn }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Alarm,
                             contentDescription = null,
-                            tint = if (alarmOn) Color(0xFFE67E22) else Color.Gray
+                            tint = if (alarmOn) c.warn else c.ink50
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(Space.m))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Set Alarm", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50))
-                            Text("Trigger an alarm sound", fontSize = 12.sp, color = Color.Gray)
+                            Text("Set Alarm", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                            Text("Trigger an alarm sound", style = NestifyTheme.type.meta, color = c.ink50)
                         }
                         Switch(
                             checked = alarmOn,
                             onCheckedChange = { alarmOn = it },
-                            colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFE67E22), checkedTrackColor = Color(0xFFFAD7A0))
+                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = c.brand)
                         )
                     }
-                    
+
                     if (alarmOn) {
-                        Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                            Text("Custom Alarm Sound", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2C3E50))
-                            Spacer(modifier = Modifier.height(8.dp))
+                        Column(modifier = Modifier.padding(start = Space.l, end = Space.l, bottom = Space.l)) {
+                            Text("Custom Alarm Sound", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.Medium), color = c.ink70)
+                            Spacer(modifier = Modifier.height(Space.s))
                             Row {
-                                Button(
+                                NButton(
+                                    label = "Pick Sound",
                                     onClick = { audioPickerLauncher.launch("audio/*") },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
-                                ) {
-                                    Icon(Icons.Default.AttachFile, contentDescription = null, tint = Color(0xFFE67E22), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Pick Sound", color = Color(0xFF2C3E50), fontSize = 12.sp)
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Button(
+                                    variant = com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant.Secondary,
+                                    size = BtnSize.Sm,
+                                    leadingIcon = Icons.Default.AttachFile,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(Space.s))
+                                NButton(
+                                    label = "Record",
                                     onClick = { /* Implement Recording Logic */ },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(12.dp),
-                                    modifier = Modifier.weight(1f).height(40.dp),
-                                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
-                                ) {
-                                    Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFFE67E22), modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Record", color = Color(0xFF2C3E50), fontSize = 12.sp)
-                                }
+                                    variant = com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant.Secondary,
+                                    size = BtnSize.Sm,
+                                    leadingIcon = Icons.Default.Mic,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                             if (selectedAudioUri != null) {
                                 Text(
                                     text = "Selected: ${selectedAudioUri?.split("/")?.lastOrNull()}",
-                                    fontSize = 11.sp,
-                                    color = Color.Gray,
-                                    modifier = Modifier.padding(top = 4.dp)
+                                    style = NestifyTheme.type.meta,
+                                    color = c.ink50,
+                                    modifier = Modifier.padding(top = Space.xs)
                                 )
                             }
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(Space.m))
 
             // Notification Toggle
-            Surface(
-                color = if (notificationOn) Color(0xFFEBF5FB) else Color(0xFFF8FAFB),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().clickable { notificationOn = !notificationOn }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(Radii.l)
+                    .background(if (notificationOn) c.brandSoft else c.surface2)
+                    .clickable { notificationOn = !notificationOn }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(Space.l)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
                         contentDescription = null,
-                        tint = if (notificationOn) Color(0xFF3498DB) else Color.Gray
+                        tint = if (notificationOn) c.brand else c.ink50
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(Space.m))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Set Notification", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50))
-                        Text("Show a system notification", fontSize = 12.sp, color = Color.Gray)
+                        Text("Set Notification", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                        Text("Show a system notification", style = NestifyTheme.type.meta, color = c.ink50)
                     }
                     Switch(
                         checked = notificationOn,
                         onCheckedChange = { notificationOn = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF3498DB), checkedTrackColor = Color(0xFFAED6F1))
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = c.brand)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Space.xl))
 
             // Dynamic Repeat Selection
-            Text("Repeat Pattern", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50), fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-            Surface(
-                color = Color(0xFFF8FAFB),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
+            Text("Repeat Pattern", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Spacer(modifier = Modifier.height(Space.m))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(Radii.l)
+                    .background(c.surface2)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Space.l)) {
                     when(categoryId) {
                         1L -> {
                             val days = listOf("S", "M", "T", "W", "T", "F", "S")
@@ -309,12 +309,12 @@ fun ScheduleCreationSheet(
                                     Box(
                                         modifier = Modifier
                                             .size(36.dp)
-                                            .clip(androidx.compose.foundation.shape.CircleShape)
-                                            .background(if (isSelected) Color(0xFF2C3E50) else Color.White)
+                                            .clip(CircleShape)
+                                            .background(if (isSelected) c.brand else c.surface)
                                             .clickable { selectedDays = if (isSelected) selectedDays - dayNum else selectedDays + dayNum },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(day, color = if (isSelected) Color.White else Color.Gray, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text(day, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = if (isSelected) Color.White else c.ink50)
                                     }
                                 }
                             }
@@ -327,12 +327,12 @@ fun ScheduleCreationSheet(
                                         modifier = Modifier
                                             .padding(2.dp)
                                             .size(28.dp)
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(if (isSelected) Color(0xFF9B59B6) else Color.White)
+                                            .clip(Radii.xs)
+                                            .background(if (isSelected) c.brand else c.surface)
                                             .clickable { selectedDayOfMonth = day },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(day.toString(), fontSize = 10.sp, color = if (isSelected) Color.White else Color.Black, fontWeight = FontWeight.Bold)
+                                        Text(day.toString(), style = NestifyTheme.type.meta.copy(fontWeight = FontWeight.Medium), color = if (isSelected) Color.White else c.ink)
                                     }
                                 }
                             }
@@ -341,51 +341,54 @@ fun ScheduleCreationSheet(
                             val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { selectedMonthOfYear = if(selectedMonthOfYear < 12) selectedMonthOfYear + 1 else 1 }) {
-                                    Text("${months[selectedMonthOfYear - 1]}", fontWeight = FontWeight.Bold, color = Color(0xFF27AE60))
+                                    Text("${months[selectedMonthOfYear - 1]}", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.brand)
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(Space.s))
                                 TextButton(onClick = { selectedDayOfYear = if(selectedDayOfYear < 31) selectedDayOfYear + 1 else 1 }) {
-                                    Text("Day $selectedDayOfYear", fontWeight = FontWeight.Bold, color = Color(0xFF27AE60))
+                                    Text("Day $selectedDayOfYear", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.brand)
                                 }
                             }
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
+
+            Spacer(modifier = Modifier.height(Space.xl))
+
             // Auto Task Toggle
-            Surface(
-                color = if (isAutoTask) Color(0xFFFDF2FA) else Color(0xFFF8FAFB),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().clickable { isAutoTask = !isAutoTask }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(Radii.l)
+                    .background(if (isAutoTask) c.brandSoft else c.surface2)
+                    .clickable { isAutoTask = !isAutoTask }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(Space.l)
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
                         contentDescription = null,
-                        tint = if (isAutoTask) Color(0xFF9B59B6) else Color.Gray
+                        tint = if (isAutoTask) c.brand else c.ink50
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(Space.m))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Auto-Task", fontWeight = FontWeight.Bold, color = Color(0xFF2C3E50))
-                        Text("Let Nestify handle this automatically", fontSize = 12.sp, color = Color.Gray)
+                        Text("Auto-Task", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                        Text("Let Nestify handle this automatically", style = NestifyTheme.type.meta, color = c.ink50)
                     }
                     Switch(
                         checked = isAutoTask,
                         onCheckedChange = { isAutoTask = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF9B59B6), checkedTrackColor = Color(0xFFF5EEF8))
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = c.brand)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Space.xxxl))
 
-            Button(
+            NButton(
+                label = if (editingItem == null) "Create Schedule" else "Update Schedule",
                 onClick = {
                     val fromTimeMinutes = fromTimeState.hour * 60 + fromTimeState.minute
                     val toTimeMinutes = toTimeState.hour * 60 + toTimeState.minute
@@ -426,30 +429,35 @@ fun ScheduleCreationSheet(
                     onSaveSchedule(item)
                     onDismissRequest()
                 },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C3E50))
-            ) {
-                Text(if (editingItem == null) "Create Schedule" else "Update Schedule", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(40.dp))
+                size = BtnSize.Lg,
+                full = true
+            )
+            Spacer(modifier = Modifier.height(Space.xxxl))
         }
     }
 
     if (showFromTimePicker || showToTimePicker) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { showFromTimePicker = false; showToTimePicker = false }) {
             Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.White,
-                modifier = Modifier.padding(16.dp)
+                shape = Radii.xl,
+                color = c.surface,
+                modifier = Modifier.padding(Space.l)
             ) {
-                Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Select Time", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Spacer(modifier = Modifier.height(24.dp))
-                    TimePicker(state = if (showFromTimePicker) fromTimeState else toTimeState)
+                Column(modifier = Modifier.padding(Space.xl), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Select Time", style = NestifyTheme.type.h3Serif, color = c.ink)
+                    Spacer(modifier = Modifier.height(Space.xl))
+                    TimePicker(
+                        state = if (showFromTimePicker) fromTimeState else toTimeState,
+                        colors = TimePickerDefaults.colors(
+                            selectorColor = c.brand,
+                            periodSelectorSelectedContainerColor = c.brandSoft,
+                            timeSelectorSelectedContainerColor = c.brandSoft,
+                            timeSelectorSelectedContentColor = c.brandDeep
+                        )
+                    )
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         TextButton(onClick = { showFromTimePicker = false; showToTimePicker = false }) {
-                            Text("Done", color = Color(0xFF2C3E50), fontWeight = FontWeight.Bold)
+                            Text("Done", style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.brand)
                         }
                     }
                 }
@@ -460,18 +468,20 @@ fun ScheduleCreationSheet(
 
 @Composable
 fun TimeBlock(label: String, hour: Int, minute: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Surface(
-        color = Color(0xFFF8FAFB),
-        shape = RoundedCornerShape(16.dp),
-        modifier = modifier.clickable { onClick() }
+    val c = NestifyTheme.colors
+    Box(
+        modifier = modifier
+            .clip(Radii.l)
+            .background(c.surface2)
+            .clickable { onClick() }
+            .padding(Space.l)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 12.sp, color = Color.Gray)
+        Column {
+            Text(label, style = NestifyTheme.type.meta, color = c.ink50)
             Text(
                 text = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF2C3E50)
+                style = NestifyTheme.type.h2Serif,
+                color = c.ink
             )
         }
     }

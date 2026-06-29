@@ -2,18 +2,31 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.MyProjects
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,139 +35,138 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.nhbhuiyan.nestify.ui.theme.*
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
+import com.nhbhuiyan.nestify.ui.theme.NestifyGradients
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProjectDetailScreen(navController: NavController) {
     // In a real app, we'd get the projectId from the NavBackStackEntry
     val project = mockProjects.first() // Mocking for Phase 1
+    val c = NestifyTheme.colors
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Project Details", fontWeight = FontWeight.ExtraBold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Share */ }) {
-                        Icon(Icons.Default.Share, "Share")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NestifySurface)
-            )
-        },
-        containerColor = NestifySurface
-    ) { paddingValues ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = "Project Details",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                IconButtonChrome(
+                    Icons.Default.Share,
+                    onClick = { /* Share */ },
+                    contentDescription = "Share",
+                )
+            },
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.screen)
+                .padding(top = Space.l, bottom = Space.xl),
+            verticalArrangement = Arrangement.spacedBy(Space.xl),
         ) {
-            // Header Image / Brand Logo
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .background(NestifyGradients.meshGradient())
+            // ── Dark hero header ──────────────────────────────────────────────
+            NestifyCard(
+                modifier = Modifier.fillMaxWidth(),
+                background = c.surfaceDk,
+                padding = Space.xl,
             ) {
-                Surface(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .align(Alignment.Center),
-                    shape = RoundedCornerShape(32.dp),
-                    color = Color.White,
-                    shadowElevation = 16.dp
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(NestifyGradients.darkHero())
                 ) {
-                    Image(
-                        painter = painterResource(project.brandLogo),
-                        contentDescription = null,
-                        modifier = Modifier.padding(24.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(72.dp)
+                                .clip(Radii.l)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                painter = painterResource(project.brandLogo),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .padding(16.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                        }
+                        Spacer(Modifier.width(Space.l))
+                        Column(Modifier.weight(1f)) {
+                            Kicker(project.category, color = Color.White.copy(alpha = 0.6f))
+                            Spacer(Modifier.height(Space.xs))
+                            Text(
+                                project.name,
+                                style = NestifyTheme.type.h1Serif,
+                                color = Color.White,
+                            )
+                        }
+                    }
                 }
             }
 
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = project.name,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Black,
-                    color = NestifySlate
-                )
-                Text(
-                    text = project.category,
-                    fontSize = 16.sp,
-                    color = NestifyGreen,
-                    fontWeight = FontWeight.Bold
-                )
+            DetailSection("Motive") {
+                Text(project.motive, style = NestifyTheme.type.body, color = c.ink70)
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            DetailSection("Description") {
+                Text(project.description, style = NestifyTheme.type.body, color = c.ink50)
+            }
 
-                DetailSectionTitle("Motive")
-                Text(
-                    text = project.motive,
-                    fontSize = 16.sp,
-                    color = NestifySlate.copy(alpha = 0.8f),
-                    lineHeight = 24.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                DetailSectionTitle("Description")
-                Text(
-                    text = project.description,
-                    fontSize = 15.sp,
-                    color = Color.Gray,
-                    lineHeight = 22.sp
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                DetailSectionTitle("Key Features")
+            DetailSection("Key Features") {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s)
                 ) {
                     project.features.forEach { feature ->
-                        FeatureChip(feature)
+                        Chip(feature, tone = ChipTone.Soft, leadingIcon = Icons.Default.Bolt)
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                DetailSectionTitle("Tech Stack")
+            DetailSection("Tech Stack") {
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    verticalArrangement = Arrangement.spacedBy(Space.s)
                 ) {
                     project.techStack.forEach { tech ->
-                        TechChip(tech)
+                        Chip(tech, tone = ChipTone.Default)
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                DetailSectionTitle("Gallery / Demo")
+            DetailSection("Gallery / Demo") {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.l),
+                    contentPadding = PaddingValues(end = Space.screen)
                 ) {
                     items(project.demoImages) { imageRes ->
-                        Card(
-                            modifier = Modifier
+                        Box(
+                            Modifier
                                 .width(280.dp)
-                                .height(160.dp),
-                            shape = RoundedCornerShape(20.dp)
+                                .height(160.dp)
+                                .clip(Radii.l)
+                                .background(c.surface2)
                         ) {
                             Image(
                                 painter = painterResource(imageRes),
@@ -165,86 +177,42 @@ fun ProjectDetailScreen(navController: NavController) {
                         }
                     }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                DetailSectionTitle("Where to find")
+            DetailSection("Where to find") {
                 InfoCard(Icons.Default.Map, project.whereToFind)
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                DetailSectionTitle("Sources")
-                project.sources.forEach { (platform, url) ->
-                    InfoCard(Icons.Default.Link, "$platform: $url")
-                    Spacer(modifier = Modifier.height(8.dp))
+            if (project.sources.isNotEmpty()) {
+                DetailSection("Sources") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                        project.sources.forEach { (platform, url) ->
+                            InfoCard(Icons.Default.Link, "$platform: $url")
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(40.dp))
             }
         }
     }
 }
 
 @Composable
-fun DetailSectionTitle(title: String) {
-    Text(
-        text = title,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Black,
-        color = NestifySlate,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
-}
-
-@Composable
-fun FeatureChip(feature: String) {
-    Surface(
-        color = NestifySkyBlue.copy(alpha = 0.15f),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Bolt, null, tint = NestifySlate, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(feature, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
-        }
-    }
-}
-
-@Composable
-fun TechChip(tech: String) {
-    Surface(
-        color = NestifySlate.copy(alpha = 0.05f),
-        shape = CircleShape,
-        border = androidx.compose.foundation.BorderStroke(1.dp, NestifySlate.copy(alpha = 0.1f))
-    ) {
-        Text(
-            tech,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = NestifySlate,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-        )
+private fun DetailSection(title: String, content: @Composable () -> Unit) {
+    Column {
+        SectionHead(title = title)
+        Spacer(Modifier.height(Space.m))
+        content()
     }
 }
 
 @Composable
 fun InfoCard(icon: ImageVector, text: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECF0F1))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, null, tint = NestifySlate, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(text, fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+    val c = NestifyTheme.colors
+    NestifyCard(modifier = Modifier.fillMaxWidth(), padding = Space.l) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = c.brand, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(Space.m))
+            Text(text, style = NestifyTheme.type.body, color = c.ink70)
         }
     }
 }

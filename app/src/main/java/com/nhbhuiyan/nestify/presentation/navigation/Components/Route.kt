@@ -4,10 +4,13 @@ sealed class Route(val route: String){
     object SplashScreen: Route("splashScreen")
 
     object Home : Route("home")
-    object Gallery : Route("gallery")
     object Library : Route("library")
     object Services : Route("services")
     object Profile : Route("profile")
+
+    // BrainSton remake — new bottom-nav tabs
+    object Network : Route("network")   // center, uplifted — the academic social feed
+    object MySpace : Route("mySpace")   // personal-productivity hub (Notes/Links/Files/Schedules/Projects)
     object Search: Route("search")
     //notes
     object Notes : Route("notes")
@@ -59,6 +62,9 @@ sealed class Route(val route: String){
     object ExamDetail: Route("examDetail/{subjectName}") {
         fun createRoute(subjectName: String) = "examDetail/$subjectName"
     }
+    object ReadingRoom: Route("readingRoom/{topicId}") {
+        fun createRoute(topicId: Long) = "readingRoom/$topicId"
+    }
     object MyProjects: Route("myProjects")
     object ProjectDetail: Route("projectDetail/{projectId}"){
         fun createRoute(projectId: String) = "projectDetail/$projectId"
@@ -68,6 +74,7 @@ sealed class Route(val route: String){
     object Results : Route("results")
     object Schedule : Route("schedule")
     object Settings : Route("settings")
+    object Auth : Route("auth")
 
     object AppStartNav : Route("appStartNav")
     object InAppNav1 : Route("inAppNav")
@@ -75,4 +82,10 @@ sealed class Route(val route: String){
     object mediaNav: Route("mediaNav")
     object mediaNav2: Route("mediaNav2")
     object BottomNavBarNav: Route("bottomNavBarNav")
+
+    // Management Hub
+    object Management : Route("management")
+    object MergeRequests : Route("mergeRequests")
+    object RoleManagement : Route("roleManagement")
+    object Announcements : Route("announcements")
 }

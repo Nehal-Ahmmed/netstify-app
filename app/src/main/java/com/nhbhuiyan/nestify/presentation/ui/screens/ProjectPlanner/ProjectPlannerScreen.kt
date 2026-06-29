@@ -1,81 +1,82 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.ProjectPlanner
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
-import com.nhbhuiyan.nestify.ui.theme.*
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.OneLine
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ProgressBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
+import com.nhbhuiyan.nestify.ui.theme.NestifyGradients
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectPlannerScreen(navController: NavController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Column {
-                        Text("Project Planner", fontWeight = FontWeight.Black, fontSize = 24.sp, color = NestifySlate)
-                        Text("Strategize your next big thing", fontSize = 12.sp, color = Color.Gray)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = NestifySlate)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* TODO: Search */ }) {
-                        Icon(Icons.Default.Dashboard, "View Mode", tint = NestifySlate)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NestifySurface)
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { /* TODO: Open Form */ },
-                containerColor = NestifySlate,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(20.dp),
-                icon = { Icon(Icons.Default.Add, "Add") },
-                text = { Text("Plan Project", fontWeight = FontWeight.Bold) }
-            )
-        },
-        containerColor = NestifySurface
-    ) { paddingValues ->
+    val c = NestifyTheme.colors
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = "Project Planner",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                IconButtonChrome(
+                    Icons.Default.Dashboard,
+                    onClick = { /* TODO: View Mode */ },
+                    contentDescription = "View Mode",
+                )
+            },
+        )
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = Space.screen,
+                end = Space.screen,
+                top = Space.l,
+                bottom = Space.xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(Space.l),
         ) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                PlannerHeroCard()
-            }
+            item { PlannerHeroCard() }
 
             item {
-                SectionHeader("Ongoing Strategies")
+                SectionHead(title = "Ongoing Strategies", kicker = "Roadmap")
             }
 
             items(mockProjectPlans) { plan ->
@@ -89,15 +90,16 @@ fun ProjectPlannerScreen(navController: NavController) {
 
 @Composable
 fun PlannerHeroCard() {
-    Card(
+    val c = NestifyTheme.colors
+    NestifyCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        background = c.surfaceDk,
+        padding = Space.xl,
     ) {
         Box(
-            modifier = Modifier
-                .background(NestifyGradients.meshGradient())
-                .padding(24.dp)
+            Modifier
+                .fillMaxWidth()
+                .background(NestifyGradients.darkHero())
         ) {
             Column {
                 Row(
@@ -106,29 +108,23 @@ fun PlannerHeroCard() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Active Plans", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text("05 Projects", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                        Kicker("ACTIVE PLANS", color = Color.White.copy(alpha = 0.6f))
+                        Spacer(Modifier.height(Space.xs))
+                        Text(
+                            "${mockProjectPlans.size} Projects",
+                            style = NestifyTheme.type.displaySerif,
+                            color = Color.White,
+                        )
                     }
                     Icon(
-                        Icons.Default.Timeline, 
-                        null, 
-                        tint = Color.White.copy(alpha = 0.3f), 
-                        modifier = Modifier.size(56.dp)
+                        Icons.Default.Timeline,
+                        null,
+                        tint = Color.White.copy(alpha = 0.3f),
+                        modifier = Modifier.size(48.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(20.dp))
-                Surface(
-                    color = Color.White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        "On track with 85% efficiency", 
-                        color = Color.White, 
-                        fontSize = 11.sp, 
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+                Spacer(Modifier.height(Space.l))
+                Chip("On track · 85% efficiency", tone = ChipTone.Ok)
             }
         }
     }
@@ -136,85 +132,57 @@ fun PlannerHeroCard() {
 
 @Composable
 fun ProjectPlanCard(plan: ProjectPlanModel, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFECF0F1))
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+    val c = NestifyTheme.colors
+    NestifyCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CategoryBadge(plan.category)
                 Spacer(Modifier.weight(1f))
                 PriorityBadge(plan.priority)
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
+
+            Spacer(Modifier.height(Space.m))
+
+            OneLine(
                 plan.name,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Black,
-                color = NestifySlate
+                style = NestifyTheme.type.h3Serif,
+                color = c.ink,
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
+
+            Spacer(Modifier.height(Space.xs))
+
+            OneLine(
                 plan.motive,
-                fontSize = 13.sp,
-                color = Color.Gray,
-                maxLines = 1
+                style = NestifyTheme.type.body,
+                color = c.ink50,
             )
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
+
+            Spacer(Modifier.height(Space.l))
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LinearProgressIndicator(
-                    progress = { plan.progress },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .clip(CircleShape),
-                    color = NestifySlate,
-                    trackColor = NestifySlate.copy(alpha = 0.1f)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+                ProgressBar(value = plan.progress, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(Space.m))
                 Text(
                     "${(plan.progress * 100).toInt()}%",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Black,
-                    color = NestifySlate
+                    style = NestifyTheme.type.label.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                    color = c.ink,
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(Modifier.height(Space.m))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Event, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(plan.deadline, fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Default.Event, null, tint = c.ink50, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(Space.xs))
+                    Text(plan.deadline, style = NestifyTheme.type.meta, color = c.ink50)
                 }
-                
-                Surface(
-                    color = NestifySlate.copy(alpha = 0.05f),
-                    shape = CircleShape
-                ) {
-                    Text(
-                        "${plan.phases.size} Phases",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = NestifySlate,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
+
+                Kicker("${plan.phases.size} Phases")
             }
         }
     }
@@ -222,48 +190,31 @@ fun ProjectPlanCard(plan: ProjectPlanModel, onClick: () -> Unit) {
 
 @Composable
 fun CategoryBadge(category: String) {
-    val color = when(category) {
-        "Mobile App" -> Color(0xFF3498DB)
-        "Web Dev" -> Color(0xFFE67E22)
-        "AI/ML" -> Color(0xFF9B59B6)
-        "Backend" -> Color(0xFF27AE60)
-        else -> Color.Gray
+    val tone = when (category) {
+        "Mobile App" -> ChipTone.Brand
+        "Web Dev" -> ChipTone.Warn
+        "AI/ML" -> ChipTone.Soft
+        "Backend" -> ChipTone.Ok
+        else -> ChipTone.Default
     }
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            category.uppercase(),
-            color = color,
-            fontSize = 9.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
+    Chip(category.uppercase(), tone = tone)
 }
 
 @Composable
 fun PriorityBadge(priority: String) {
-    val color = when(priority) {
-        "High" -> Color(0xFFE74C3C)
-        "Medium" -> Color(0xFFF1C40F)
-        else -> Color(0xFF2ECC71)
+    val c = NestifyTheme.colors
+    val color = when (priority) {
+        "High" -> c.coral
+        "Medium" -> c.warn
+        else -> c.ok
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
-        Spacer(Modifier.width(6.dp))
-        Text(priority, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, androidx.compose.foundation.shape.CircleShape)
+        )
+        Spacer(Modifier.width(Space.xs))
+        Text(priority, style = NestifyTheme.type.meta, color = c.ink50)
     }
-}
-
-@Composable
-fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Black,
-        color = NestifySlate,
-        modifier = Modifier.padding(vertical = 8.dp)
-    )
 }

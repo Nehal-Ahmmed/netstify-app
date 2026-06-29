@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
@@ -42,6 +44,23 @@ android {
         compose = true
         buildConfig= true
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/INDEX.LIST"
+        }
+    }
+}
+
+// Room schema export: required because AppDataBase has exportSchema = true.
+// Generated JSON schemas live in app/schemas/ and should be committed to git so future
+// migrations are diffable and testable.
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
 }
 
 dependencies {
@@ -71,11 +90,13 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.0")
     implementation("androidx.room:room-ktx:2.6.0")
     kapt("androidx.room:room-compiler:2.6.0")
+    implementation("net.zetetic:sqlcipher-android:4.5.4@aar")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.48.1")
     kapt("com.google.dagger:hilt-compiler:2.48.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
 
     // Retrofit
@@ -88,6 +109,7 @@ dependencies {
 
     // Coroutines (required for async operations)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // DateTime support
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
@@ -105,4 +127,21 @@ dependencies {
 
     //opencv
     implementation("com.quickbirdstudios:opencv:4.5.3.0")
+
+    // Google Drive API & Auth
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.api-client:google-api-client-android:1.33.0")
+    implementation("com.google.api-client:google-api-client-gson:1.33.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20220815-2.0.0")
+    implementation("com.google.guava:guava:31.1-android")
+
+    // Firebase Authentication & Services
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.messaging)
+    implementation(libs.firebase.functions)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.config)
 }

@@ -12,19 +12,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Launch
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,8 +31,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,18 +39,30 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.nhbhuiyan.nestify.domain.model.ExperienceData
 import com.nhbhuiyan.nestify.domain.model.ProjectData
-import com.nhbhuiyan.nestify.ui.theme.*
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnSize
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconTile
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyInput
+import com.nhbhuiyan.nestify.ui.theme.NestifyGradients
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val c = NestifyTheme.colors
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    var showImagePicker by remember { mutableStateOf(false) }
     var imagePickerTarget by remember { mutableStateOf(ImagePickerTarget.NONE) }
 
     var showExperienceDialog by remember { mutableStateOf(false) }
@@ -74,45 +81,41 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(if (state.isEditing) "Edit Profile" else "Profile") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    if (state.isEditing) {
-                        TextButton(onClick = { viewModel.cancelEditing() }) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.error)
-                        }
-                    }
-                    IconButton(onClick = { viewModel.toggleEditing() }) {
-                        Icon(
-                            if (state.isEditing) Icons.Default.Check else Icons.Default.Edit,
-                            if (state.isEditing) "Save" else "Edit"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = if (state.isEditing) "Edit Profile" else "Profile",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                if (state.isEditing) {
+                    NButton(
+                        label = "Cancel",
+                        onClick = { viewModel.cancelEditing() },
+                        variant = BtnVariant.Ghost,
+                        size = BtnSize.Sm
+                    )
+                }
+                IconButtonChrome(
+                    icon = if (state.isEditing) Icons.Default.Check else Icons.Default.Edit,
+                    onClick = { viewModel.toggleEditing() },
+                    tint = if (state.isEditing) c.brand else c.ink,
+                    contentDescription = if (state.isEditing) "Save" else "Edit"
                 )
-            )
-        },
-        containerColor = NestifySurface
-    ) { paddingValues ->
+            }
+        )
+
         if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = c.brand)
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = Space.xxl),
+                verticalArrangement = Arrangement.spacedBy(Space.l)
             ) {
                 item {
                     ProfileHeader(
@@ -206,8 +209,6 @@ fun ProfileScreen(
                         onInstagramChange = viewModel::updateInstagram
                     )
                 }
-
-                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
@@ -255,6 +256,7 @@ fun ProfileHeader(
     onJobTitleChange: (String) -> Unit,
     onLocationChange: (String) -> Unit
 ) {
+    val c = NestifyTheme.colors
     Box(modifier = Modifier.fillMaxWidth()) {
         Column {
             Box(
@@ -273,7 +275,7 @@ fun ProfileHeader(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(NestifyGradients.meshGradient())
+                            .background(NestifyGradients.brandWash())
                     )
                 }
 
@@ -287,7 +289,7 @@ fun ProfileHeader(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Default.CameraAlt, "Change Background", tint = Color.White, modifier = Modifier.size(32.dp))
-                            Text("Change Background", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                            Text("Change Background", color = Color.White, style = NestifyTheme.type.meta)
                         }
                     }
                 }
@@ -298,7 +300,7 @@ fun ProfileHeader(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                    .padding(start = Space.l, end = Space.l, top = Space.s),
                 verticalAlignment = Alignment.Bottom
             ) {
                 Box {
@@ -306,9 +308,9 @@ fun ProfileHeader(
                         modifier = Modifier
                             .size(100.dp)
                             .offset(y = (-40).dp)
-                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .border(4.dp, c.surface, CircleShape)
                             .clip(CircleShape)
-                            .background(NestifySurface)
+                            .background(c.surface2)
                     ) {
                         if (state.avatarUrl.isNotEmpty()) {
                             AsyncImage(
@@ -326,7 +328,7 @@ fun ProfileHeader(
                                     Icons.Default.Person,
                                     "Profile",
                                     modifier = Modifier.size(48.dp),
-                                    tint = NestifySlate.copy(alpha = 0.4f)
+                                    tint = c.ink30
                                 )
                             }
                         }
@@ -349,64 +351,52 @@ fun ProfileHeader(
 
                 Spacer(Modifier.width(12.dp))
 
-
                 Column(modifier = Modifier.weight(1f).offset(y = (-40).dp)) {
-
-
                     if (isEditing) {
-                        OutlinedTextField(
+                        NestifyInput(
                             value = state.name,
                             onValueChange = onNameChange,
-                            label = { Text("Name") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+                            label = "Name",
+                            placeholder = "Your Name"
                         )
-                        Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
+                        Spacer(Modifier.height(Space.s))
+                        NestifyInput(
                             value = state.jobTitle,
                             onValueChange = onJobTitleChange,
-                            label = { Text("Profession") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = MaterialTheme.typography.titleMedium
+                            label = "Profession",
+                            placeholder = "Profession"
                         )
-                        Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
+                        Spacer(Modifier.height(Space.s))
+                        NestifyInput(
                             value = state.location,
                             onValueChange = onLocationChange,
-                            label = { Text("Location") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            leadingIcon = { Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp)) },
-                            textStyle = MaterialTheme.typography.bodySmall
+                            label = "Location",
+                            placeholder = "Location",
+                            leadingIcon = Icons.Default.LocationOn
                         )
                     } else {
-
                         Text(
                             text = state.name.ifEmpty { "Your Name" },
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = NestifySlate
+                            style = NestifyTheme.type.h2Serif,
+                            color = c.ink
                         )
-
                         Text(
                             text = state.jobTitle.ifEmpty { "Profession" },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = NestifySlate.copy(alpha = 0.8f)
+                            style = NestifyTheme.type.label.copy(fontWeight = FontWeight.Medium),
+                            color = c.ink70
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.LocationOn,
                                 contentDescription = null,
                                 modifier = Modifier.size(14.dp),
-                                tint = NestifySlate.copy(alpha = 0.6f)
+                                tint = c.ink50
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = state.location.ifEmpty { "Location" },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = NestifySlate.copy(alpha = 0.6f)
+                                style = NestifyTheme.type.meta,
+                                color = c.ink50
                             )
                         }
                     }
@@ -418,20 +408,19 @@ fun ProfileHeader(
 
 @Composable
 fun AboutMeSection(bio: String, isEditing: Boolean, onBioChange: (String) -> Unit) {
+    val c = NestifyTheme.colors
     SectionCard(title = "About Me") {
         if (isEditing) {
-            OutlinedTextField(
+            NestifyInput(
                 value = bio,
                 onValueChange = onBioChange,
-                label = { Text("About Me") },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp),
-                textStyle = MaterialTheme.typography.bodyLarge
+                placeholder = "Tell people about yourself…"
             )
         } else {
             Text(
                 text = bio.ifEmpty { "No bio added yet." },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = NestifyTheme.type.body,
+                color = c.ink70,
                 lineHeight = 22.sp
             )
         }
@@ -447,60 +436,45 @@ fun SkillsSection(
     onAddSkill: () -> Unit,
     onRemoveSkill: (String) -> Unit
 ) {
+    val c = NestifyTheme.colors
     SectionCard(title = "Technical Expertise") {
         if (isEditing) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
+                NestifyInput(
                     value = newSkill,
                     onValueChange = onNewSkillChange,
-                    label = { Text("Add skill") },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onAddSkill() })
+                    placeholder = "Add skill",
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(Modifier.width(8.dp))
-                FilledTonalIconButton(onClick = onAddSkill) {
-                    Icon(Icons.Default.Add, "Add")
-                }
+                Spacer(Modifier.width(Space.s))
+                IconTile(
+                    icon = Icons.Default.Add,
+                    modifier = Modifier.clip(Radii.s).clickable { onAddSkill() }
+                )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Space.m))
         }
 
         if (skills.isEmpty() && !isEditing) {
-            Text("No skills added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("No skills added yet.", style = NestifyTheme.type.body, color = c.ink50)
         } else {
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
                 contentPadding = PaddingValues(vertical = 4.dp)
             ) {
                 items(skills) { skill ->
                     if (isEditing) {
-                        InputChip(
-                            selected = false,
-                            onClick = { onRemoveSkill(skill) },
-                            label = { Text(skill) },
-                            trailingIcon = {
-                                Icon(Icons.Default.Close, "Remove", modifier = Modifier.size(16.dp))
-                            },
-                            colors = InputChipDefaults.inputChipColors(
-                                containerColor = NestifySkyBlue.copy(alpha = 0.2f)
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NestifySkyBlue.copy(alpha = 0.5f))
+                        Chip(
+                            label = skill,
+                            tone = ChipTone.Soft,
+                            leadingIcon = Icons.Default.Close,
+                            onClick = { onRemoveSkill(skill) }
                         )
                     } else {
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(skill) },
-                            colors = AssistChipDefaults.assistChipColors(
-                                labelColor = NestifySlate,
-                                containerColor = NestifySkyBlue.copy(alpha = 0.2f)
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, NestifySkyBlue.copy(alpha = 0.5f))
-                        )
+                        Chip(label = skill, tone = ChipTone.Soft)
                     }
                 }
             }
@@ -516,21 +490,21 @@ fun ExperienceSection(
     onEdit: (Int) -> Unit,
     onRemove: (Int) -> Unit
 ) {
+    val c = NestifyTheme.colors
     SectionCard(title = "Experience") {
         if (isEditing) {
-            FilledTonalButton(
+            NButton(
+                label = "Add Experience",
                 onClick = onAdd,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Add Experience")
-            }
-            Spacer(Modifier.height(8.dp))
+                variant = BtnVariant.Soft,
+                full = true,
+                leadingIcon = Icons.Default.Add
+            )
+            Spacer(Modifier.height(Space.m))
         }
 
         if (experiences.isEmpty() && !isEditing) {
-            Text("No experience added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("No experience added yet.", style = NestifyTheme.type.body, color = c.ink50)
         }
 
         experiences.forEachIndexed { index, exp ->
@@ -540,9 +514,12 @@ fun ExperienceSection(
                 ExperienceItem(exp = exp)
             }
             if (index < experiences.size - 1) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                        .height(1.dp)
+                        .background(c.hair)
                 )
             }
         }
@@ -551,56 +528,40 @@ fun ExperienceSection(
 
 @Composable
 fun ExperienceItem(exp: ExperienceData) {
+    val c = NestifyTheme.colors
     Row(modifier = Modifier.fillMaxWidth()) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(NestifySkyBlue.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Work, contentDescription = null, tint = NestifySlate, modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(16.dp))
+        IconTile(icon = Icons.Default.Work, background = c.brandSoft, tint = c.brand)
+        Spacer(Modifier.width(Space.l))
         Column {
-            Text(exp.title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Text(exp.company, style = MaterialTheme.typography.bodyMedium, color = NestifySlate.copy(alpha = 0.7f))
-            Text(exp.duration, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(exp.title, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+            Text(exp.company, style = NestifyTheme.type.body, color = c.ink70)
+            Text(exp.duration, style = NestifyTheme.type.meta, color = c.ink50)
             Spacer(Modifier.height(4.dp))
-            Text(exp.description, style = MaterialTheme.typography.bodySmall)
+            Text(exp.description, style = NestifyTheme.type.body, color = c.ink70)
         }
     }
 }
 
 @Composable
 fun ExperienceEditItem(exp: ExperienceData, onEdit: () -> Unit, onRemove: () -> Unit) {
-    Card(
+    val c = NestifyTheme.colors
+    NestifyCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = NestifySurface),
-        shape = RoundedCornerShape(12.dp)
+        padding = Space.m,
+        background = c.surface2
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(NestifySkyBlue.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Work, null, tint = NestifySlate, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.width(12.dp))
+            IconTile(icon = Icons.Default.Work, background = c.brandSoft, tint = c.brand)
+            Spacer(Modifier.width(Space.m))
             Column(modifier = Modifier.weight(1f)) {
-                Text(exp.title.ifEmpty { "Title" }, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                Text(exp.company.ifEmpty { "Company" }, style = MaterialTheme.typography.bodySmall, color = NestifySlate.copy(alpha = 0.7f))
+                Text(exp.title.ifEmpty { "Title" }, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Text(exp.company.ifEmpty { "Company" }, style = NestifyTheme.type.meta, color = c.ink70)
             }
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, "Edit", modifier = Modifier.size(20.dp))
-            }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Delete, "Remove", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-            }
+            IconButtonChrome(Icons.Default.Edit, onEdit, tint = c.ink, contentDescription = "Edit")
+            IconButtonChrome(Icons.Default.Delete, onRemove, tint = c.coral, contentDescription = "Remove")
         }
     }
 }
@@ -613,21 +574,21 @@ fun ProjectsSection(
     onEdit: (Int) -> Unit,
     onRemove: (Int) -> Unit
 ) {
+    val c = NestifyTheme.colors
     SectionCard(title = "Featured Products") {
         if (isEditing) {
-            FilledTonalButton(
+            NButton(
+                label = "Add Project",
                 onClick = onAdd,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Add Project")
-            }
-            Spacer(Modifier.height(8.dp))
+                variant = BtnVariant.Soft,
+                full = true,
+                leadingIcon = Icons.Default.Add
+            )
+            Spacer(Modifier.height(Space.m))
         }
 
         if (projects.isEmpty() && !isEditing) {
-            Text("No projects added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("No projects added yet.", style = NestifyTheme.type.body, color = c.ink50)
         }
 
         projects.forEachIndexed { index, project ->
@@ -636,34 +597,28 @@ fun ProjectsSection(
             } else {
                 ProjectItem(project = project)
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Space.s))
         }
     }
 }
 
 @Composable
 fun ProjectItem(project: ProjectData) {
-    Card(
+    val c = NestifyTheme.colors
+    NestifyCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = NestifySurface),
-        shape = RoundedCornerShape(12.dp)
+        padding = Space.m,
+        background = c.surface2
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(NestifyPeach.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Launch, contentDescription = null, tint = NestifySlate)
-            }
-            Spacer(Modifier.width(12.dp))
+            IconTile(icon = Icons.Default.Launch, size = 48.dp, background = c.coralSoft, tint = c.coral)
+            Spacer(Modifier.width(Space.m))
             Column(modifier = Modifier.weight(1f)) {
-                Text(project.name, fontWeight = FontWeight.Bold)
-                Text(project.description, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Text(project.name, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Text(project.description, style = NestifyTheme.type.meta, color = c.ink70, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -671,34 +626,24 @@ fun ProjectItem(project: ProjectData) {
 
 @Composable
 fun ProjectEditItem(project: ProjectData, onEdit: () -> Unit, onRemove: () -> Unit) {
-    Card(
+    val c = NestifyTheme.colors
+    NestifyCard(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = NestifySurface),
-        shape = RoundedCornerShape(12.dp)
+        padding = Space.m,
+        background = c.surface2
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(NestifyPeach.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Launch, null, tint = NestifySlate)
-            }
-            Spacer(Modifier.width(12.dp))
+            IconTile(icon = Icons.Default.Launch, size = 48.dp, background = c.coralSoft, tint = c.coral)
+            Spacer(Modifier.width(Space.m))
             Column(modifier = Modifier.weight(1f)) {
-                Text(project.name.ifEmpty { "Project Name" }, fontWeight = FontWeight.Bold)
-                Text(project.description.ifEmpty { "Description" }, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                Text(project.name.ifEmpty { "Project Name" }, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                Text(project.description.ifEmpty { "Description" }, style = NestifyTheme.type.meta, color = c.ink70, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, "Edit", modifier = Modifier.size(20.dp))
-            }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Delete, "Remove", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-            }
+            IconButtonChrome(Icons.Default.Edit, onEdit, tint = c.ink, contentDescription = "Edit")
+            IconButtonChrome(Icons.Default.Delete, onRemove, tint = c.coral, contentDescription = "Remove")
         }
     }
 }
@@ -713,77 +658,18 @@ fun ConnectSection(
     onTwitterChange: (String) -> Unit, onYoutubeChange: (String) -> Unit,
     onInstagramChange: (String) -> Unit
 ) {
+    val c = NestifyTheme.colors
     SectionCard(title = "Connect") {
         if (isEditing) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = onEmailChange,
-                label = { Text("Email") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Email, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = linkedin,
-                onValueChange = onLinkedinChange,
-                label = { Text("LinkedIn URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Link, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = github,
-                onValueChange = onGithubChange,
-                label = { Text("GitHub URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Code, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = website,
-                onValueChange = onWebsiteChange,
-                label = { Text("Website URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Public, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = twitter,
-                onValueChange = onTwitterChange,
-                label = { Text("Twitter / X URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.AlternateEmail, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = youtube,
-                onValueChange = onYoutubeChange,
-                label = { Text("YouTube URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.PlayArrow, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = instagram,
-                onValueChange = onInstagramChange,
-                label = { Text("Instagram URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.CameraAlt, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                NestifyInput(email, onEmailChange, label = "Email", placeholder = "you@example.com", leadingIcon = Icons.Default.Email)
+                NestifyInput(linkedin, onLinkedinChange, label = "LinkedIn URL", placeholder = "https://…", leadingIcon = Icons.Default.Link)
+                NestifyInput(github, onGithubChange, label = "GitHub URL", placeholder = "https://…", leadingIcon = Icons.Default.Code)
+                NestifyInput(website, onWebsiteChange, label = "Website URL", placeholder = "https://…", leadingIcon = Icons.Default.Public)
+                NestifyInput(twitter, onTwitterChange, label = "Twitter / X URL", placeholder = "https://…", leadingIcon = Icons.Default.AlternateEmail)
+                NestifyInput(youtube, onYoutubeChange, label = "YouTube URL", placeholder = "https://…", leadingIcon = Icons.Default.PlayArrow)
+                NestifyInput(instagram, onInstagramChange, label = "Instagram URL", placeholder = "https://…", leadingIcon = Icons.Default.CameraAlt)
+            }
         } else {
             val links = listOfNotNull(
                 email.takeIf { it.isNotEmpty() }?.let { "Email" to it to Icons.Default.Email },
@@ -796,10 +682,10 @@ fun ConnectSection(
             )
 
             if (links.isEmpty()) {
-                Text("No links added yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("No links added yet.", style = NestifyTheme.type.body, color = c.ink50)
             } else {
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.s)
                 ) {
                     items(links) { (pair, icon) ->
                         val (label, url) = pair
@@ -813,6 +699,7 @@ fun ConnectSection(
 
 @Composable
 fun SocialIconButton(icon: ImageVector, label: String, url: String) {
+    val c = NestifyTheme.colors
     val context = LocalContext.current
     val intentUrl = if (label == "Email") "mailto:$url" else url
 
@@ -820,7 +707,7 @@ fun SocialIconButton(icon: ImageVector, label: String, url: String) {
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .border(1.dp, NestifySlate.copy(alpha = 0.1f), CircleShape)
+                .border(1.dp, c.hair, CircleShape)
                 .clip(CircleShape)
                 .clickable {
                     try {
@@ -830,30 +717,28 @@ fun SocialIconButton(icon: ImageVector, label: String, url: String) {
                 },
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = label, tint = NestifySlate, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = label, tint = c.ink, modifier = Modifier.size(22.dp))
         }
         Spacer(Modifier.height(4.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(label, style = NestifyTheme.type.meta, color = c.ink70, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 fun SectionCard(title: String, content: @Composable () -> Unit) {
-    Card(
+    val c = NestifyTheme.colors
+    NestifyCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = borderStroke()
+            .padding(horizontal = Space.l),
+        padding = Space.l
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = NestifySlate,
-                modifier = Modifier.padding(bottom = 12.dp)
+                style = NestifyTheme.type.h3Serif,
+                color = c.ink,
+                modifier = Modifier.padding(bottom = Space.m)
             )
             content()
         }
@@ -867,48 +752,25 @@ fun ExperienceDialog(
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val c = NestifyTheme.colors
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Experience") },
+        containerColor = c.surface,
+        titleContentColor = c.ink,
+        title = { Text("Experience", style = NestifyTheme.type.h3Serif, color = c.ink) },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = experience.title,
-                    onValueChange = { onExperienceChange(experience.copy(title = it)) },
-                    label = { Text("Title") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = experience.company,
-                    onValueChange = { onExperienceChange(experience.copy(company = it)) },
-                    label = { Text("Company") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = experience.duration,
-                    onValueChange = { onExperienceChange(experience.copy(duration = it)) },
-                    label = { Text("Duration (e.g. 2022 - Present)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = experience.description,
-                    onValueChange = { onExperienceChange(experience.copy(description = it)) },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                NestifyInput(experience.title, { onExperienceChange(experience.copy(title = it)) }, label = "Title")
+                NestifyInput(experience.company, { onExperienceChange(experience.copy(company = it)) }, label = "Company")
+                NestifyInput(experience.duration, { onExperienceChange(experience.copy(duration = it)) }, label = "Duration (e.g. 2022 - Present)")
+                NestifyInput(experience.description, { onExperienceChange(experience.copy(description = it)) }, label = "Description")
             }
         },
         confirmButton = {
-            TextButton(onClick = onSave) { Text("Save") }
+            NButton(label = "Save", onClick = onSave, size = BtnSize.Sm)
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            NButton(label = "Cancel", onClick = onDismiss, variant = BtnVariant.Ghost, size = BtnSize.Sm)
         }
     )
 }
@@ -920,43 +782,24 @@ fun ProjectDialog(
     onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val c = NestifyTheme.colors
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Project") },
+        containerColor = c.surface,
+        titleContentColor = c.ink,
+        title = { Text("Project", style = NestifyTheme.type.h3Serif, color = c.ink) },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = project.name,
-                    onValueChange = { onProjectChange(project.copy(name = it)) },
-                    label = { Text("Project Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = project.description,
-                    onValueChange = { onProjectChange(project.copy(description = it)) },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = project.link,
-                    onValueChange = { onProjectChange(project.copy(link = it)) },
-                    label = { Text("Project URL") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                NestifyInput(project.name, { onProjectChange(project.copy(name = it)) }, label = "Project Name")
+                NestifyInput(project.description, { onProjectChange(project.copy(description = it)) }, label = "Description")
+                NestifyInput(project.link, { onProjectChange(project.copy(link = it)) }, label = "Project URL")
             }
         },
         confirmButton = {
-            TextButton(onClick = onSave) { Text("Save") }
+            NButton(label = "Save", onClick = onSave, size = BtnSize.Sm)
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            NButton(label = "Cancel", onClick = onDismiss, variant = BtnVariant.Ghost, size = BtnSize.Sm)
         }
     )
 }
-
-fun borderStroke() = androidx.compose.foundation.BorderStroke(1.dp, NestifySlate.copy(alpha = 0.05f))

@@ -37,10 +37,11 @@ import com.nhbhuiyan.nestify.data.local.Dao.ExamPlannerDao
         SubjectEntity::class,
         ClassTestMarkEntity::class,
         SyllabusTopicEntity::class,
-        TermReportEntity::class
+        TermReportEntity::class,
+        com.nhbhuiyan.nestify.data.local.entity.PYQEntity::class
     ],
-    version = 16, // Incremented version to 16
-    exportSchema = false
+    version = 20, // v20: add firestoreId to syllabus_topics and pyqs tables
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDataBase : RoomDatabase() {

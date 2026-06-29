@@ -15,19 +15,12 @@ class SettingsRepoImpl @Inject constructor(
     override val isDarkTheme: Flow<Boolean>
         get() = settingsDatastore.isDarkTheme
 
-    override suspend fun setFontSize(fontSize: String) {
-        settingsDatastore.setFontSize(fontSize)
+    override suspend fun setThemeMode(mode: String) {
+        settingsDatastore.setThemeMode(mode)
     }
 
-    override val fontSize: Flow<String>
-        get() = settingsDatastore.fontsize
-
-    override suspend fun setBiometricLock(isLock: Boolean) {
-        settingsDatastore.setBiometricLock(isLock)
-    }
-
-    override val isBiometricLock: Flow<Boolean>
-        get() = settingsDatastore.isBiometricLockEnabled
+    override val themeMode: Flow<String>
+        get() = settingsDatastore.themeMode
 
     override suspend fun setSyncEnabled(isSync: Boolean) {
         settingsDatastore.setSync(isSync)
@@ -36,5 +29,18 @@ class SettingsRepoImpl @Inject constructor(
     override val isSyncEnabled: Flow<Boolean>
         get() = settingsDatastore.isSyncEnabled
 
+    override suspend fun setDefaultLevel(level: Int) {
+        settingsDatastore.setDefaultLevel(level)
+    }
+
+    override val defaultLevel: Flow<Int>
+        get() = settingsDatastore.defaultLevel
+
+    override suspend fun setDefaultTerm(term: Int) {
+        settingsDatastore.setDefaultTerm(term)
+    }
+
+    override val defaultTerm: Flow<Int>
+        get() = settingsDatastore.defaultTerm
 
 }

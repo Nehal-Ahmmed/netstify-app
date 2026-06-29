@@ -7,19 +7,52 @@ import com.nhbhuiyan.nestify.data.local.entity.ClassTestMarkEntity
 import com.nhbhuiyan.nestify.data.local.entity.SubjectEntity
 import com.nhbhuiyan.nestify.data.local.entity.SyllabusTopicEntity
 import com.nhbhuiyan.nestify.data.local.entity.TermReportEntity
+import com.nhbhuiyan.nestify.domain.manager.UserSessionManager
+import com.nhbhuiyan.nestify.domain.repository.ExamDataRepository
+import com.nhbhuiyan.nestify.domain.repository.SettingsRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.nhbhuiyan.nestify.domain.repository.ClassGroupRepository
+import com.nhbhuiyan.nestify.domain.model.ClassGroupRosterItem
+import com.nhbhuiyan.nestify.data.local.AppDataBase
 import javax.inject.Inject
 
 @HiltViewModel
 class ExamPlannerViewModel @Inject constructor(
-    private val examPlannerDao: ExamPlannerDao
+    private val examDataRepository: ExamDataRepository,
+    private val settingsRepo: SettingsRepo,
+    private val sessionManager: UserSessionManager,
+    private val classGroupRepository: ClassGroupRepository,
+    val appDataBase: AppDataBase,
+    private val examPlannerDao: ExamPlannerDao // Retained for backup/restore procedures
 ) : ViewModel() {
+
+    val sessionFlow = sessionManager.sessionFlow
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val classRoster: StateFlow<List<ClassGroupRosterItem>> = sessionFlow.flatMapLatest { session ->
+        if (session != null) {
+            classGroupRepository.getClassRoster(session.classGroupId)
+        } else {
+            flowOf(emptyList())
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Subjects list flow
     private val _subjects = MutableStateFlow<List<SubjectEntity>>(emptyList())
@@ -37,70 +70,146 @@ class ExamPlannerViewModel @Inject constructor(
     private val _termReports = MutableStateFlow<List<TermReportEntity>>(emptyList())
     val termReports: StateFlow<List<TermReportEntity>> = _termReports.asStateFlow()
 
+    // Selected student ID for CR to edit/view marks (defaults to empty meaning own marks)
+    private val _selectedStudentIdForCT = MutableStateFlow("")
+    val selectedStudentIdForCT: StateFlow<String> = _selectedStudentIdForCT.asStateFlow()
+
+    // PYQs map: topicId -> list of PYQEntity
+    private val _pyqs = MutableStateFlow<Map<Long, List<com.nhbhuiyan.nestify.data.local.entity.PYQEntity>>>(emptyMap())
+    val pyqs: StateFlow<Map<Long, List<com.nhbhuiyan.nestify.data.local.entity.PYQEntity>>> = _pyqs.asStateFlow()
+
+    private val pyqJobs = mutableMapOf<Long, kotlinx.coroutines.Job>()
+
+    private data class PyqSyncInfo(
+        val deptCode: String,
+        val semesterId: String,
+        val subjectCode: String,
+        val topicFirestoreId: String
+    )
+
+    fun loadPYQsForTopic(topicId: Long) {
+        if (pyqJobs.containsKey(topicId)) return
+        val job = viewModelScope.launch {
+            // First, collect the local Room list immediately so it shows up instantly if cached
+            launch {
+                examPlannerDao.getPYQsForTopic(topicId).collect { list ->
+                    _pyqs.value = _pyqs.value.toMutableMap().apply {
+                        put(topicId, list)
+                    }
+                }
+            }
+
+            // Next, observe the session, subjects, and topics to trigger Firestore sync
+            combine(
+                sessionFlow,
+                subjects,
+                syllabusTopics
+            ) { session, subjectsList, topicsMap ->
+                if (session == null) return@combine null
+                
+                val topic = topicsMap.values.flatten().find { it.id == topicId }
+                val firestoreId = topic?.firestoreId
+                if (firestoreId.isNullOrEmpty()) return@combine null
+
+                val subject = subjectsList.find { it.id == topic.subjectId } ?: return@combine null
+                val semesterId = "L${subject.level}T${subject.term}"
+
+                PyqSyncInfo(session.departmentCode, semesterId, subject.code, firestoreId)
+            }.collectLatest { info ->
+                if (info != null) {
+                    examDataRepository.getPyqsFlow(
+                        deptCode = info.deptCode,
+                        semesterId = info.semesterId,
+                        subjectCode = info.subjectCode,
+                        topicFirestoreId = info.topicFirestoreId,
+                        topicLocalId = topicId
+                    ).collectLatest { list ->
+                        _pyqs.value = _pyqs.value.toMutableMap().apply {
+                            put(topicId, list)
+                        }
+                    }
+                }
+            }
+        }
+        pyqJobs[topicId] = job
+    }
+
+    fun insertPYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity) {
+        viewModelScope.launch {
+            examPlannerDao.insertPYQ(pyq)
+        }
+    }
+
+    fun updatePYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity) {
+        viewModelScope.launch {
+            examPlannerDao.updatePYQ(pyq)
+        }
+    }
+
+    fun deletePYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity) {
+        viewModelScope.launch {
+            examPlannerDao.deletePYQ(pyq)
+        }
+    }
+
+    val defaultLevel: StateFlow<Int> = settingsRepo.defaultLevel
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = 2
+        )
+
+    val defaultTerm: StateFlow<Int> = settingsRepo.defaultTerm
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = 2
+        )
+
     init {
         loadSubjects()
         loadTermReports()
-        prepopulateDatabaseIfEmpty()
+        observeSharedCTMarks()
     }
 
-    private fun prepopulateDatabaseIfEmpty() {
-        viewModelScope.launch {
-            try {
-                // Check subjects
-                val existingSubjects = examPlannerDao.getAllSubjects().first()
-                if (existingSubjects.isEmpty()) {
-                    insertSubject(SubjectEntity(code = "CSE-221", name = "Database Systems", credits = 3.0f, level = 2, term = 2, attendanceMarks = 28f))
-                    insertSubject(SubjectEntity(code = "CSE-223", name = "Software Engineering", credits = 3.0f, level = 2, term = 2, attendanceMarks = 26f))
-                    insertSubject(SubjectEntity(code = "CSE-225", name = "Microprocessors & Interfacing", credits = 3.0f, level = 2, term = 2, attendanceMarks = 25f))
-                    insertSubject(SubjectEntity(code = "CSE-227", name = "Algorithms Design & Analysis", credits = 3.0f, level = 2, term = 2, attendanceMarks = 29f))
-                    insertSubject(SubjectEntity(code = "CSE-226", name = "Microprocessors Lab", credits = 1.5f, level = 2, term = 2, attendanceMarks = 14f))
-                }
+    fun selectStudentIdForCT(studentId: String) {
+        _selectedStudentIdForCT.value = studentId
+    }
 
-                // Check reports
-                val existingReports = examPlannerDao.getAllTermReports().first()
-                if (existingReports.isEmpty()) {
-                    insertTermReport(
-                        TermReportEntity(
-                            level = 1,
-                            term = 1,
-                            gpa = 3.61f,
-                            pdfLocalPath = "cache/REP_001.pdf",
-                            timestamp = System.currentTimeMillis() - 86400000L * 300L
-                        )
-                    )
-                    insertTermReport(
-                        TermReportEntity(
-                            level = 1,
-                            term = 2,
-                            gpa = 3.71f,
-                            pdfLocalPath = "cache/REP_002.pdf",
-                            timestamp = System.currentTimeMillis() - 86400000L * 180L
-                        )
-                    )
-                    insertTermReport(
-                        TermReportEntity(
-                            level = 2,
-                            term = 1,
-                            gpa = 3.87f,
-                            pdfLocalPath = "cache/REP_003.pdf",
-                            timestamp = System.currentTimeMillis() - 86400000L * 60L
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    fun setDefaultLevel(level: Int) {
+        viewModelScope.launch {
+            settingsRepo.setDefaultLevel(level)
+        }
+    }
+
+    fun setDefaultTerm(term: Int) {
+        viewModelScope.launch {
+            settingsRepo.setDefaultTerm(term)
         }
     }
 
     private fun loadSubjects() {
         viewModelScope.launch {
-            examPlannerDao.getAllSubjects().collectLatest { subList ->
-                _subjects.value = subList
-                // Load CT and syllabus topics for each subject
-                subList.forEach { subject ->
-                    loadCTMarksForSubject(subject.id)
-                    loadSyllabusTopicsForSubject(subject.id)
+            sessionManager.sessionFlow.collectLatest { session ->
+                if (session == null) {
+                    _subjects.value = emptyList()
+                    return@collectLatest
+                }
+
+                val dept = session.departmentCode
+                val semesters = listOf("L1T1", "L1T2", "L2T1", "L2T2", "L3T1", "L3T2", "L4T1", "L4T2")
+
+                val flows = semesters.map { sem ->
+                    examDataRepository.getSubjectsFlow(dept, sem)
+                }
+
+                combine(flows) { arrays ->
+                    arrays.flatMap { it }
+                }.collectLatest { combinedList ->
+                    _subjects.value = combinedList
+                    combinedList.forEach { subject ->
+                        loadSyllabusTopicsForSubject(dept, subject)
+                    }
                 }
             }
         }
@@ -108,94 +217,238 @@ class ExamPlannerViewModel @Inject constructor(
 
     private fun loadTermReports() {
         viewModelScope.launch {
-            examPlannerDao.getAllTermReports().collectLatest { reportList ->
+            examDataRepository.getTermReports().collectLatest { reportList ->
                 _termReports.value = reportList
             }
         }
     }
 
-    private fun loadCTMarksForSubject(subjectId: Long) {
+    private fun loadSyllabusTopicsForSubject(deptCode: String, subject: SubjectEntity) {
         viewModelScope.launch {
-            examPlannerDao.getCTMarksForSubject(subjectId).collectLatest { marks ->
-                val currentMap = _classTestMarks.value.toMutableMap()
-                currentMap[subjectId] = marks
-                _classTestMarks.value = currentMap
+            val semesterId = "L${subject.level}T${subject.term}"
+            examDataRepository.getTopicsFlow(deptCode, semesterId, subject.code, subject.id)
+                .collectLatest { topics ->
+                    val currentMap = _syllabusTopics.value.toMutableMap()
+                    currentMap[subject.id] = topics
+                    _syllabusTopics.value = currentMap
+                }
+        }
+    }
+
+    private fun observeSharedCTMarks() {
+        viewModelScope.launch {
+            combine(
+                sessionManager.sessionFlow,
+                _selectedStudentIdForCT,
+                defaultLevel,
+                defaultTerm
+            ) { session, selectedId, level, term ->
+                Triple(session, selectedId, "L${level}T${term}")
+            }.collectLatest { (session, selectedId, semesterId) ->
+                if (session == null) return@collectLatest
+                val targetStudentId = selectedId.ifEmpty { session.rollNumber }
+
+                examDataRepository.getSharedCTMarks(session.classGroupId, semesterId, targetStudentId)
+                    .collectLatest { sharedMarksMap ->
+                        val currentSubjects = _subjects.value
+                        val mappedCT = mutableMapOf<Long, List<ClassTestMarkEntity>>()
+
+                        currentSubjects.forEach { subject ->
+                            val list = sharedMarksMap[subject.code] ?: listOf(0f, 0f, 0f, 0f, 0f)
+                            val entities = (1..4).map { idx ->
+                                ClassTestMarkEntity(
+                                    subjectId = subject.id,
+                                    testIndex = idx,
+                                    marks = list.getOrElse(idx - 1) { 0f }
+                                )
+                            }
+                            mappedCT[subject.id] = entities
+
+                            val attendance = list.getOrElse(4) { 0f }
+                            if (subject.attendanceMarks != attendance) {
+                                viewModelScope.launch {
+                                    examDataRepository.updateLocalGradeAndAttendance(
+                                        subject.id,
+                                        subject.finalGrade,
+                                        attendance
+                                    )
+                                }
+                            }
+                        }
+                        _classTestMarks.value = mappedCT
+                    }
             }
-        }
-    }
-
-    private fun loadSyllabusTopicsForSubject(subjectId: Long) {
-        viewModelScope.launch {
-            examPlannerDao.getSyllabusTopicsForSubject(subjectId).collectLatest { topics ->
-                val currentMap = _syllabusTopics.value.toMutableMap()
-                currentMap[subjectId] = topics
-                _syllabusTopics.value = currentMap
-            }
-        }
-    }
-
-    // Insert / update / delete operations
-    fun insertSubject(subject: SubjectEntity) {
-        viewModelScope.launch {
-            val subjectId = examPlannerDao.insertSubject(subject)
-            // Pre-insert 4 empty CT marks for this subject
-            for (i in 1..4) {
-                examPlannerDao.insertCTMark(
-                    ClassTestMarkEntity(
-                        subjectId = subjectId,
-                        testIndex = i,
-                        marks = 0f
-                    )
-                )
-            }
-        }
-    }
-
-    fun updateSubject(subject: SubjectEntity) {
-        viewModelScope.launch {
-            examPlannerDao.updateSubject(subject)
-        }
-    }
-
-    fun deleteSubject(subject: SubjectEntity) {
-        viewModelScope.launch {
-            examPlannerDao.deleteSubject(subject)
         }
     }
 
     fun updateCTMark(mark: ClassTestMarkEntity) {
         viewModelScope.launch {
-            examPlannerDao.insertCTMark(mark) // REPLACE will trigger update
+            val subject = _subjects.value.firstOrNull { it.id == mark.subjectId } ?: return@launch
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            val targetStudentId = _selectedStudentIdForCT.value.ifEmpty { session.rollNumber }
+
+            val currentList = _classTestMarks.value[subject.id]?.toMutableList() ?: mutableListOf(
+                ClassTestMarkEntity(subjectId = subject.id, testIndex = 1, marks = 0f),
+                ClassTestMarkEntity(subjectId = subject.id, testIndex = 2, marks = 0f),
+                ClassTestMarkEntity(subjectId = subject.id, testIndex = 3, marks = 0f),
+                ClassTestMarkEntity(subjectId = subject.id, testIndex = 4, marks = 0f)
+            )
+
+            val existingIdx = currentList.indexOfFirst { it.testIndex == mark.testIndex }
+            if (existingIdx != -1) {
+                currentList[existingIdx] = mark
+            }
+
+            val floatList = listOf(
+                currentList.firstOrNull { it.testIndex == 1 }?.marks ?: 0f,
+                currentList.firstOrNull { it.testIndex == 2 }?.marks ?: 0f,
+                currentList.firstOrNull { it.testIndex == 3 }?.marks ?: 0f,
+                currentList.firstOrNull { it.testIndex == 4 }?.marks ?: 0f,
+                subject.attendanceMarks
+            )
+
+            val currentSharedMap = mutableMapOf<String, List<Float>>()
+            _subjects.value.forEach { sub ->
+                val subList = _classTestMarks.value[sub.id]?.map { it.marks } ?: listOf(0f, 0f, 0f, 0f)
+                val subAtt = sub.attendanceMarks
+                currentSharedMap[sub.code] = subList + subAtt
+            }
+            currentSharedMap[subject.code] = floatList
+
+            examDataRepository.saveCTMarks(session.classGroupId, semesterId, targetStudentId, currentSharedMap)
         }
     }
 
-    fun insertSyllabusTopic(topic: SyllabusTopicEntity) {
+    fun updateSubject(subject: SubjectEntity) {
         viewModelScope.launch {
-            examPlannerDao.insertSyllabusTopic(topic)
+            examDataRepository.updateLocalGradeAndAttendance(subject.id, subject.finalGrade, subject.attendanceMarks)
+
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            val targetStudentId = _selectedStudentIdForCT.value.ifEmpty { session.rollNumber }
+
+            val currentList = _classTestMarks.value[subject.id]?.map { it.marks } ?: listOf(0f, 0f, 0f, 0f)
+            val floatList = currentList + subject.attendanceMarks
+
+            val currentSharedMap = mutableMapOf<String, List<Float>>()
+            _subjects.value.forEach { sub ->
+                val subList = _classTestMarks.value[sub.id]?.map { it.marks } ?: listOf(0f, 0f, 0f, 0f)
+                val subAtt = if (sub.id == subject.id) subject.attendanceMarks else sub.attendanceMarks
+                currentSharedMap[sub.code] = subList + subAtt
+            }
+
+            examDataRepository.saveCTMarks(session.classGroupId, semesterId, targetStudentId, currentSharedMap)
         }
     }
 
     fun updateSyllabusTopic(topic: SyllabusTopicEntity) {
         viewModelScope.launch {
-            examPlannerDao.updateSyllabusTopic(topic)
+            examDataRepository.updateLocalTopicProgress(topic.id, topic.isCompleted, topic.isRevised, topic.priority)
+        }
+    }
+
+    fun insertSyllabusTopic(topic: SyllabusTopicEntity) {
+        viewModelScope.launch {
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val subject = _subjects.value.firstOrNull { it.id == topic.subjectId } ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            
+            val academicTopic = com.nhbhuiyan.nestify.domain.model.AcademicTopic(
+                id = java.util.UUID.randomUUID().toString(),
+                subjectCode = subject.code,
+                section = topic.section,
+                title = topic.title
+            )
+            examDataRepository.saveTopic(session.departmentCode, semesterId, subject.code, academicTopic)
         }
     }
 
     fun deleteSyllabusTopic(topic: SyllabusTopicEntity) {
         viewModelScope.launch {
-            examPlannerDao.deleteSyllabusTopic(topic)
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val subject = _subjects.value.firstOrNull { it.id == topic.subjectId } ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            
+            examDataRepository.deleteTopic(session.departmentCode, semesterId, subject.code, topic.title, topic.section)
+        }
+    }
+
+    fun insertSubject(subject: SubjectEntity) {
+        viewModelScope.launch {
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            examDataRepository.saveSubject(session.departmentCode, semesterId, subject)
+        }
+    }
+
+    fun deleteSubject(subject: SubjectEntity) {
+        viewModelScope.launch {
+            val session = sessionManager.sessionFlow.first() ?: return@launch
+            val semesterId = "L${subject.level}T${subject.term}"
+            examDataRepository.deleteSubject(session.departmentCode, semesterId, subject.code)
         }
     }
 
     fun insertTermReport(report: TermReportEntity) {
         viewModelScope.launch {
-            examPlannerDao.insertTermReport(report)
+            examDataRepository.saveTermReport(report)
         }
     }
 
     fun deleteTermReport(report: TermReportEntity) {
         viewModelScope.launch {
-            examPlannerDao.deleteTermReport(report)
+            examDataRepository.deleteTermReport(report)
+        }
+    }
+
+    fun restoreSemesterArchive(
+        archive: com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner.PersonalDataArchive,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                // Restore term report
+                archive.termReport?.let { termRep ->
+                    val termReportEntity = TermReportEntity(
+                        level = termRep.level,
+                        term = termRep.term,
+                        gpa = termRep.gpa,
+                        pdfLocalPath = termRep.pdfFileName ?: "",
+                        timestamp = termRep.timestamp
+                    )
+                    examPlannerDao.insertTermReport(termReportEntity)
+                }
+
+                // Restore subjects and class test marks
+                for (subArc in archive.subjects) {
+                    val subjectEntity = SubjectEntity(
+                        code = subArc.code,
+                        name = subArc.name,
+                        credits = subArc.credits,
+                        level = subArc.level,
+                        term = subArc.term,
+                        examDate = subArc.examDate,
+                        finalGrade = subArc.finalGrade,
+                        attendanceMarks = subArc.attendanceMarks
+                    )
+                    val insertedId = examPlannerDao.insertSubject(subjectEntity)
+
+                    // Restore class test marks for this subject
+                    for (ctArc in subArc.classTestMarks) {
+                        val ctEntity = ClassTestMarkEntity(
+                            subjectId = insertedId,
+                            testIndex = ctArc.testIndex,
+                            marks = ctArc.marks
+                        )
+                        examPlannerDao.insertCTMark(ctEntity)
+                    }
+                }
+                onSuccess()
+            } catch (e: Exception) {
+                onFailure(e.localizedMessage ?: "Unknown restore error")
+            }
         }
     }
 }

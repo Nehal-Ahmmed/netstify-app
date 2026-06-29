@@ -2,6 +2,8 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,25 +22,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,17 +45,31 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.domain.model.FileFolder
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
-import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.GlassNavSpace
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyInput
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.components.fileFolderScreenState
 import com.nhbhuiyan.nestify.presentation.ui.screens.FileScreen.data.FileViewModel
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FolderScreen(
     navController: NavController
 ) {
     val viewmodel: FileViewModel = hiltViewModel()
     val state by viewmodel.folderUiState.collectAsState()
+    val c = NestifyTheme.colors
 
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var selectedCategoryForCreation by remember { mutableStateOf("pdf") }
@@ -89,41 +91,29 @@ fun FolderScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "📁 All Folders", style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }, navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }, colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas)
+    ) {
+        NestifyAppBar(
+            title = "All Folders",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                IconButtonChrome(
+                    Icons.Default.CreateNewFolder,
+                    onClick = { showCreateFolderDialog = true },
+                    tint = c.brand,
+                    contentDescription = "Create Folder",
                 )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    showCreateFolderDialog = true
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.CreateNewFolder, contentDescription = "Create Folder")
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
+            },
+        )
+
         when {
             state.isLoading -> {
-                LoadingShimmer()
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = c.brand)
+                }
             }
 
             state.pdfFolders.isEmpty() && state.photoFolders.isEmpty() && state.documentFolders.isEmpty() -> {
@@ -142,556 +132,430 @@ fun FolderScreen(
                         Log.d("folderScreen", "📁 Folder clicked: ${folder.id}")
                         navController.navigate(route = Route.Files.createFolder(folderId = folder.id))
                     },
-                    onCreateFolderClick = {category->
+                    onCreateFolderClick = { category ->
                         selectedCategoryForCreation = category
                         showCreateFolderDialog = true
                     },
-                    modifier = Modifier.padding(innerPadding)
                 )
             }
         }
     }
 }
 
-        @Composable
-        fun AllCategoriesContent(
-            state: fileFolderScreenState,
-            onFolderClick: (FileFolder) -> Unit,
-            onCreateFolderClick: (String) -> Unit,
-            modifier: Modifier
+@Composable
+fun AllCategoriesContent(
+    state: fileFolderScreenState,
+    onFolderClick: (FileFolder) -> Unit,
+    onCreateFolderClick: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(Space.xxl),
+        contentPadding = PaddingValues(
+            start = Space.screen,
+            end = Space.screen,
+            top = Space.l,
+            bottom = GlassNavSpace,
+        ),
+    ) {
+        // PDFs Section
+        if (state.pdfFolders.isNotEmpty()) {
+            item {
+                CategorySection(
+                    title = "PDFs",
+                    folders = state.pdfFolders,
+                    categoryColor = 0xFF4CAF50,
+                    onFolderClick = onFolderClick,
+                    onCreateFolderClick = { onCreateFolderClick("pdf") }
+                )
+            }
+        }
+
+        // Photos Section
+        if (state.photoFolders.isNotEmpty()) {
+            item {
+                CategorySection(
+                    title = "Photos",
+                    folders = state.photoFolders,
+                    categoryColor = 0xFF2196F3,
+                    onFolderClick = onFolderClick,
+                    onCreateFolderClick = { onCreateFolderClick("photo") }
+                )
+            }
+        }
+
+        // Documents Section
+        if (state.documentFolders.isNotEmpty()) {
+            item {
+                CategorySection(
+                    title = "Documents",
+                    folders = state.documentFolders,
+                    categoryColor = 0xFFFF9800,
+                    onFolderClick = onFolderClick,
+                    onCreateFolderClick = { onCreateFolderClick("document") }
+                )
+            }
+        }
+
+        // Empty category sections (for adding new folders)
+        item {
+            AddCategorySections(
+                hasPdfs = state.pdfFolders.isNotEmpty(),
+                hasPhotos = state.photoFolders.isNotEmpty(),
+                hasDocuments = state.documentFolders.isNotEmpty(),
+                onCreateFolderClick = onCreateFolderClick
+            )
+        }
+    }
+}
+
+@Composable
+fun CategorySection(
+    title: String,
+    folders: List<FileFolder>,
+    categoryColor: Long,
+    onFolderClick: (FileFolder) -> Unit,
+    onCreateFolderClick: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Space.m)
+    ) {
+        SectionHead(
+            title = title,
+            kicker = "${folders.size} folder${if (folders.size > 1) "s" else ""}",
+        )
+
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.m)
         ) {
-            LazyColumn(
-                modifier = modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(32.dp),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-                // PDFs Section
-                if (state.pdfFolders.isNotEmpty()) {
-                    item {
-                        CategorySection(
-                            title = "📑 PDFs",
-                            folders = state.pdfFolders,
-                            categoryColor = 0xFF4CAF50,
-                            onFolderClick = onFolderClick,
-                            onCreateFolderClick = { onCreateFolderClick("pdf") }
-                        )
-                    }
-                }
-
-                // Photos Section
-                if (state.photoFolders.isNotEmpty()) {
-                    item {
-                        CategorySection(
-                            title = "🖼️ Photos",
-                            folders = state.photoFolders,
-                            categoryColor = 0xFF2196F3,
-                            onFolderClick = onFolderClick,
-                            onCreateFolderClick = { onCreateFolderClick("photo") }
-                        )
-                    }
-                }
-
-                // Documents Section
-                if (state.documentFolders.isNotEmpty()) {
-                    item {
-                        CategorySection(
-                            title = "📄 Documents",
-                            folders = state.documentFolders,
-                            categoryColor = 0xFFFF9800,
-                            onFolderClick = onFolderClick,
-                            onCreateFolderClick = { onCreateFolderClick("document") }
-                        )
-                    }
-                }
-
-                // Empty category sections (for adding new folders)
-                item {
-                    AddCategorySections(
-                        hasPdfs = state.pdfFolders.isNotEmpty(),
-                        hasPhotos = state.photoFolders.isNotEmpty(),
-                        hasDocuments = state.documentFolders.isNotEmpty(),
-                        onCreateFolderClick = onCreateFolderClick
-                    )
-                }
+            items(folders, key = { it.id }) { folder ->
+                HorizontalFolderCard(
+                    folder = folder,
+                    onClick = { onFolderClick(folder) }
+                )
+            }
+            item {
+                AddHorizontalFolderCard(
+                    categoryColor = categoryColor,
+                    onClick = onCreateFolderClick
+                )
             }
         }
+    }
+}
 
-        @Composable
-        fun CategorySection(
-            title: String,
-            folders: List<FileFolder>,
-            categoryColor: Long,
-            onFolderClick: (FileFolder) -> Unit,
-            onCreateFolderClick: () -> Unit
+@Composable
+fun HorizontalFolderCard(folder: FileFolder, onClick: () -> Unit) {
+    val c = NestifyTheme.colors
+    val accent = Color(folder.color)
+    NestifyCard(
+        modifier = Modifier.width(140.dp),
+        padding = Space.l,
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Space.m)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "${folders.size} folder${if (folders.size > 1) "s" else ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(folders, key = { it.id }) { folder ->
-                        HorizontalFolderCard(
-                            folder = folder,
-                            onClick = { onFolderClick(folder) }
-                        )
-                    }
-                    item {
-                        AddHorizontalFolderCard(
-                            categoryColor = categoryColor,
-                            onClick = onCreateFolderClick
-                        )
-                    }
-                }
-            }
-        }
-
-        @Composable
-        fun HorizontalFolderCard(folder: FileFolder, onClick: () -> Unit) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.width(140.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(folder.color).copy(alpha = 0.1f),
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(folder.color).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = folder.icon,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                    }
-
-                    // Folder Name
-                    Text(
-                        text = folder.name,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
-
-        @Composable
-        fun AddHorizontalFolderCard(categoryColor: Long, onClick: () -> Unit) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.width(140.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Add Icon
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(categoryColor).copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add folder",
-                            tint = Color(categoryColor),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    // Add Text
-                    Text(
-                        text = "Add Folder",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-        @Composable
-        fun AddCategorySections(
-            hasPdfs: Boolean,
-            hasPhotos: Boolean,
-            hasDocuments: Boolean,
-            onCreateFolderClick: (String) -> Unit
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // Show "Add PDF Folders" section if no PDF folders exist
-                if (!hasPdfs) {
-                    AddCategoryCard(
-                        title = "📑 Add PDF Folders",
-                        description = "Organize your PDF files",
-                        categoryColor = 0xFF4CAF50,
-                        onClick = { onCreateFolderClick("pdf") }
-                    )
-                }
-
-                // Show "Add Photo Folders" section if no photo folders exist
-                if (!hasPhotos) {
-                    AddCategoryCard(
-                        title = "🖼️ Add Photo Folders",
-                        description = "Organize your images",
-                        categoryColor = 0xFF2196F3,
-                        onClick = { onCreateFolderClick("photo") }
-                    )
-                }
-
-                // Show "Add Document Folders" section if no document folders exist
-                if (!hasDocuments) {
-                    AddCategoryCard(
-                        title = "📄 Add Document Folders",
-                        description = "Organize your documents",
-                        categoryColor = 0xFFFF9800,
-                        onClick = { onCreateFolderClick("document") }
-                    )
-                }
-            }
-        }
-
-        @Composable
-        fun AddCategoryCard(
-            title: String,
-            description: String,
-            categoryColor: Long,
-            onClick: () -> Unit
-        ) {
-            Card(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(categoryColor).copy(alpha = 0.05f),
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Icon
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(categoryColor).copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = Color(categoryColor),
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    // Text Content
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-
-        @Composable
-        fun EmptyFoldersState(
-            onCreateFolder: () -> Unit
-        ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "📁",
-                    style = MaterialTheme.typography.displayLarge,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Text(text = folder.icon, style = NestifyTheme.type.h2Serif)
+            }
+            Text(
+                text = folder.name,
+                style = NestifyTheme.type.label,
+                color = c.ink,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
 
-                Text(
-                    text = "No Folders Created Yet",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+@Composable
+fun AddHorizontalFolderCard(categoryColor: Long, onClick: () -> Unit) {
+    val c = NestifyTheme.colors
+    val accent = Color(categoryColor)
+    Column(
+        modifier = Modifier
+            .width(140.dp)
+            .clip(Radii.l)
+            .background(c.surface2)
+            .border(1.dp, c.hair2, Radii.l)
+            .clickable(onClick = onClick)
+            .padding(Space.l),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.m)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(accent.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add folder",
+                tint = accent,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Text(
+            text = "Add Folder",
+            style = NestifyTheme.type.label,
+            textAlign = TextAlign.Center,
+            color = c.ink50
+        )
+    }
+}
 
-                Text(
-                    text = "Create folders to organize your files by category. Each category will appear here with its own horizontal list.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.4,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
+@Composable
+fun AddCategorySections(
+    hasPdfs: Boolean,
+    hasPhotos: Boolean,
+    hasDocuments: Boolean,
+    onCreateFolderClick: (String) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(Space.l)
+    ) {
+        if (!hasPdfs) {
+            AddCategoryCard(
+                title = "Add PDF Folders",
+                description = "Organize your PDF files",
+                categoryColor = 0xFF4CAF50,
+                onClick = { onCreateFolderClick("pdf") }
+            )
+        }
+        if (!hasPhotos) {
+            AddCategoryCard(
+                title = "Add Photo Folders",
+                description = "Organize your images",
+                categoryColor = 0xFF2196F3,
+                onClick = { onCreateFolderClick("photo") }
+            )
+        }
+        if (!hasDocuments) {
+            AddCategoryCard(
+                title = "Add Document Folders",
+                description = "Organize your documents",
+                categoryColor = 0xFFFF9800,
+                onClick = { onCreateFolderClick("document") }
+            )
+        }
+    }
+}
 
-                Button(
-                    onClick = onCreateFolder,
-                    modifier = Modifier.height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CreateNewFolder,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Create Your First Folder")
-                }
+@Composable
+fun AddCategoryCard(
+    title: String,
+    description: String,
+    categoryColor: Long,
+    onClick: () -> Unit
+) {
+    val c = NestifyTheme.colors
+    val accent = Color(categoryColor)
+    NestifyCard(
+        modifier = Modifier.fillMaxWidth(),
+        padding = Space.l,
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.l)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    tint = accent,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(title, style = NestifyTheme.type.h3Serif, color = c.ink)
+                Kicker(description)
             }
         }
+    }
+}
 
-        private fun getCategoryColor(category: String): Int {
-            return when (category.lowercase()) {
-                "pdf" -> 0xFF4CAF50   // Green
-                "photo" -> 0xFF2196F3  // Blue
-                "document" -> 0xFFFF9800 // Orange
-                else -> 0xFF9C27B0     // Purple
-            }.toInt()
-        }
+@Composable
+fun EmptyFoldersState(
+    onCreateFolder: () -> Unit
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        EmptyState(
+            icon = Icons.Outlined.Folder,
+            title = "No Folders Created Yet",
+            description = "Create folders to organize your files by category. Each category appears here with its own horizontal list.",
+            primaryLabel = "Create Your First Folder",
+            onPrimary = onCreateFolder,
+        )
+    }
+}
 
-        @Composable
-        fun CreateFolderDialog(
-            initialCategory: String,
-            onDismiss: () -> Unit,
-            onCreateFolder: (String, String, String) -> Unit
-        ) {
-            var folderName by remember { mutableStateOf("New Folder") }
-            var selectedCategory by remember { mutableStateOf(initialCategory) }
-            var selectedIcon by remember { mutableStateOf("📁") }
-            val categories = listOf(
-                "pdf" to "📑 PDFs",
-                "photo" to "🖼️ Photos",
-                "document" to "📄 Documents"
+private fun getCategoryColor(category: String): Int {
+    return when (category.lowercase()) {
+        "pdf" -> 0xFF4CAF50   // Green
+        "photo" -> 0xFF2196F3  // Blue
+        "document" -> 0xFFFF9800 // Orange
+        else -> 0xFF9C27B0     // Purple
+    }.toInt()
+}
+
+@Composable
+fun CreateFolderDialog(
+    initialCategory: String,
+    onDismiss: () -> Unit,
+    onCreateFolder: (String, String, String) -> Unit
+) {
+    val c = NestifyTheme.colors
+    var folderName by remember { mutableStateOf("New Folder") }
+    var selectedCategory by remember { mutableStateOf(initialCategory) }
+    var selectedIcon by remember { mutableStateOf("📁") }
+    val categories = listOf(
+        "pdf" to "PDFs",
+        "photo" to "Photos",
+        "document" to "Documents"
+    )
+    val icons = listOf(
+        "📁", "📑", "🖼️", "📄", "📚", "🎓", "📜", "🏠", "💼",
+        "⭐", "🔒", "🎨", "📝", "📊", "🎯", "💰", "❤️", "✨"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = c.surface,
+        shape = Radii.xl,
+        title = {
+            Text(
+                text = "Create New Folder",
+                style = NestifyTheme.type.h2Serif,
+                color = c.ink,
             )
-            val icons = listOf(
-                "📁", "📑", "🖼️", "📄", "📚", "🎓", "📜", "🏠", "💼",
-                "⭐", "🔒", "🎨", "📝", "📊", "🎯", "💰", "❤️", "✨"
-            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Space.l)
+            ) {
+                NestifyInput(
+                    value = folderName,
+                    onValueChange = { folderName = it },
+                    label = "Folder Name",
+                    placeholder = "e.g., Class Notes, Certificates",
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
-            AlertDialog(
-                onDismissRequest = onDismiss,
-                title = {
+                Column {
                     Text(
-                        text = "Create New Folder",
-                        style = MaterialTheme.typography.headlineSmall
+                        text = "Category",
+                        style = NestifyTheme.type.label,
+                        color = c.ink70,
+                        modifier = Modifier.padding(bottom = Space.s)
                     )
-                },
-                text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        // Folder Name
-                        OutlinedTextField(
-                            value = folderName,
-                            onValueChange = { folderName = it },
-                            label = { Text("Folder Name") },
-                            placeholder = { Text("e.g., Class Notes, Certificates, etc.") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        // Category Selection
-                        Column {
-                            Text(
-                                text = "Category",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                categories.forEach { (category, label) ->
-                                    CategoryChip(
-                                        label = label,
-                                        isSelected = selectedCategory == category,
-                                        color = getCategoryColor(category),
-                                        onClick = { selectedCategory = category },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
-
-                        // Icon Selection
-                        Column {
-                            Text(
-                                text = "Folder Icon",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                ),
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-
-                            // Selected Icon Preview
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = selectedIcon,
-                                    style = MaterialTheme.typography.displaySmall
-                                )
-                            }
-
-                            // Icon Grid
-                            LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(icons) { icon ->
-                                    IconChip(
-                                        icon = icon,
-                                        isSelected = selectedIcon == icon,
-                                        onClick = { selectedIcon = icon }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (folderName.isNotBlank()) {
-                                onCreateFolder(folderName, selectedCategory, selectedIcon)
-                            }
-                        },
-                        enabled = folderName.isNotBlank(),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Create Folder")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Cancel")
+                        categories.forEach { (category, label) ->
+                            Chip(
+                                label = label,
+                                tone = if (selectedCategory == category) ChipTone.Brand else ChipTone.Ghost,
+                                onClick = { selectedCategory = category },
+                            )
+                        }
                     }
                 }
+
+                Column {
+                    Text(
+                        text = "Folder Icon",
+                        style = NestifyTheme.type.label,
+                        color = c.ink70,
+                        modifier = Modifier.padding(bottom = Space.s)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Space.m),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = selectedIcon, style = NestifyTheme.type.displaySerif)
+                    }
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(Space.s)
+                    ) {
+                        items(icons) { icon ->
+                            IconChip(
+                                icon = icon,
+                                isSelected = selectedIcon == icon,
+                                onClick = { selectedIcon = icon }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            NButton(
+                label = "Create Folder",
+                onClick = {
+                    if (folderName.isNotBlank()) {
+                        onCreateFolder(folderName, selectedCategory, selectedIcon)
+                    }
+                },
+                full = true,
+            )
+        },
+        dismissButton = {
+            NButton(
+                label = "Cancel",
+                onClick = onDismiss,
+                variant = BtnVariant.Ghost,
+                full = true,
             )
         }
+    )
+}
 
-        @Composable
-        fun CategoryChip(
-            label: String,
-            isSelected: Boolean,
-            color: Int,
-            onClick: () -> Unit,
-            modifier: Modifier = Modifier
-        ) {
-            FilterChip(
-                selected = isSelected,
-                onClick = onClick,
-                label = { Text(label) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Color(color).copy(alpha = 0.1f),
-                    selectedLabelColor = Color(color),
-                    selectedLeadingIconColor = Color(color)
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = isSelected,
-                    selected = isSelected,
-                    borderColor = if (isSelected) Color(color) else Color.Transparent
-                ),
-                modifier = modifier
-            )
-        }
-
-        @Composable
-        fun IconChip(
-            icon: String,
-            isSelected: Boolean,
-            onClick: () -> Unit
-        ) {
-            FilterChip(
-                selected = isSelected,
-                onClick = onClick,
-                label = { Text(icon) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                ),
-                modifier = Modifier.size(48.dp)
-            )
-        }
-
-
+@Composable
+fun IconChip(
+    icon: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val c = NestifyTheme.colors
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(Radii.m)
+            .background(if (isSelected) c.brandSoft else c.surface2)
+            .border(1.dp, if (isSelected) c.brand else c.hair2, Radii.m)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = icon, style = NestifyTheme.type.h3Serif)
+    }
+}

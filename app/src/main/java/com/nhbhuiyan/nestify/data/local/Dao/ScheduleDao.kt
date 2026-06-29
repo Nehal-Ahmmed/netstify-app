@@ -64,4 +64,7 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM schedule_attachments WHERE scheduleId = :scheduleId")
     fun getAttachmentsForSchedule(scheduleId: Long): Flow<List<AttachmentEntity>>
+
+    @Query("SELECT * FROM schedule_attachments")
+    fun getAllAttachments(): Flow<List<AttachmentEntity>>
 }

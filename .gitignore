@@ -13,3 +13,14 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase service-account keys — NEVER commit these
+*firebase-adminsdk*.json
+serviceAccountKey*.json
+**/serviceAccountKey*.json
+
+# Functions dependencies
+functions/node_modules/
+
+# Kotlin build error/session caches
+.kotlin/

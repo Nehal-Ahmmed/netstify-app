@@ -24,37 +24,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.navigation.NavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.nhbhuiyan.nestify.domain.model.UserRole
+import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
+import com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner.ExamPlannerViewModel
 import com.nhbhuiyan.nestify.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServiceScreen(navController: NavController) {
-    val services = listOf(
-        ServiceData(
-            title = "AI Academic Assistant",
-            description = "Get smart definitions, automated summaries, and study tools powered by Gemini AI.",
-            icon = Icons.Default.AutoAwesome,
-            color = NestifySkyBlue
-        ),
-        ServiceData(
-            title = "Professional CV Builder",
-            description = "Generate industry-standard PDFs from your profile in seconds. Ready for your next big break.",
-            icon = Icons.Default.Article,
-            color = NestifyPeach
-        ),
-        ServiceData(
-            title = "Secure Biometric Vault",
-            description = "Protect your professional documents and private gallery with system-level biometric security.",
-            icon = Icons.Default.Fingerprint,
-            color = NestifyGreen
-        ),
-        ServiceData(
-            title = "Cloud Productivity Sync",
-            description = "Seamlessly sync your notes, routines, and tasks across all your devices with real-time updates.",
-            icon = Icons.Default.CloudSync,
-            color = NestifyBlueGray
-        )
-    )
+fun ServiceScreen(
+    navController: NavController,
+    viewModel: ExamPlannerViewModel = hiltViewModel()
+) {
+    val session by viewModel.sessionFlow.collectAsState(initial = null)
+    val currentRole = session?.role ?: UserRole.STUDENT
+
+    val services = remember(currentRole) {
+        if (currentRole.rank >= UserRole.CR.rank) {
+            listOf(
+                ServiceData(
+                    title = "Class Management Hub",
+                    description = "Access tools to manage courses, broadcast announcements, assign roles, and review contributions.",
+                    icon = Icons.Default.Build,
+                    color = NestifySlate,
+                    route = Route.Management.route
+                )
+            )
+        } else {
+            emptyList()
+        }
+    }
 
     Scaffold(
         containerColor = NestifySurface,
@@ -100,7 +102,11 @@ fun ServiceScreen(navController: NavController) {
 
             // Services List
             items(services) { service ->
-                ServiceCard(service)
+                ServiceCard(service, onClick = {
+                    if (service.route != null) {
+                        navController.navigate(service.route)
+                    }
+                })
             }
 
             // Trust Section
@@ -140,11 +146,12 @@ fun ServiceHeader() {
 }
 
 @Composable
-fun ServiceCard(service: ServiceData) {
+fun ServiceCard(service: ServiceData, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -260,5 +267,6 @@ data class ServiceData(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val color: Color
+    val color: Color,
+    val route: String? = null
 )
