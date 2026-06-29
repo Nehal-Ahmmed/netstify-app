@@ -6,8 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.nhbhuiyan.nestify.domain.model.FontSize
 import com.nhbhuiyan.nestify.domain.repository.SettingsRepo
+import com.nhbhuiyan.nestify.domain.manager.UserSessionManager
+import com.nhbhuiyan.nestify.data.sync.SyncManager
 import com.nhbhuiyan.nestify.presentation.ui.screens.settiingsScreen.components.SettingState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,18 +19,21 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val repository: SettingsRepo
+    private val repository: SettingsRepo,
+    private val authRepository: com.nhbhuiyan.nestify.domain.repository.AuthRepository,
+    val sessionManager: UserSessionManager,
+    private val syncManager: SyncManager
 ) : ViewModel() {
+
+    val sessionFlow = sessionManager.sessionFlow
 
     // MARK: - UI STATE
     private val _uiState = MutableStateFlow(SettingState(isDarkTheme = false))
     val uiState: StateFlow<SettingState> = _uiState
 
     // MARK: - DIALOG STATES
-    var showFontSizeSelector by mutableStateOf(false)
     var showBackupDialog by mutableStateOf(false)
     var showClearCacheDialog by mutableStateOf(false)
-    var showDeleteAllDialog by mutableStateOf(false)
 
     init {
         loadSettingFromRepository()
@@ -50,26 +54,14 @@ class SettingsViewModel @Inject constructor(
             }
 
             launch {
-                repository.isBiometricLock.collect { isBiometric ->
-                    _uiState.update { it.copy(isBiometricEnabled = isBiometric) }
+                repository.themeMode.collect { mode ->
+                    _uiState.update { it.copy(themeMode = mode) }
                 }
             }
 
             launch {
                 repository.isSyncEnabled.collect { isSync ->
                     _uiState.update { it.copy(isSyncEnabled = isSync) }
-                }
-            }
-
-            launch {
-                repository.fontSize.collect { fontsize ->
-                    val fontSizeEnum = when (fontsize) {
-                        "SMALL"  -> FontSize.SMALL
-                        "LARGE"  -> FontSize.LARGE
-                        "XLARGE" -> FontSize.XLARGE
-                        else     -> FontSize.MEDIUM
-                    }
-                    _uiState.update { it.copy(fontSize = fontSizeEnum) }
                 }
             }
         }
@@ -89,12 +81,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Handle biometric lock toggle
+     * Handle 3-way theme mode change ("system" | "light" | "dark"). Persisted via
+     * [SettingsRepo.setThemeMode]; MainActivity observes it to drive [NestifyTheme].
      */
-    fun onBiometricEnabledChanged(enabled: Boolean) {
+    fun onThemeModeChanged(mode: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isBiometricEnabled = enabled)
-            repository.setBiometricLock(enabled)
+            _uiState.value = _uiState.value.copy(themeMode = mode)
+            repository.setThemeMode(mode)
         }
     }
 
@@ -105,16 +98,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncEnabled = enabled)
             repository.setSyncEnabled(enabled)
-        }
-    }
-
-    /**
-     * Handle font size change
-     */
-    fun onFontSizeChanged(fontSize: FontSize) {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(fontSize = fontSize)
-            repository.setFontSize(fontSize.name)
+            if (enabled) {
+                syncManager.performRestore()
+            }
         }
     }
 
@@ -130,9 +116,7 @@ class SettingsViewModel @Inject constructor(
      */
     fun onExportBackup() {
         viewModelScope.launch {
-            // TODO: Implement backup export logic
-            // Export notes to JSON/PDF
-            // Save to device storage or cloud
+            syncManager.performBackup()
         }
     }
 
@@ -141,9 +125,7 @@ class SettingsViewModel @Inject constructor(
      */
     fun onImportBackup() {
         viewModelScope.launch {
-            // TODO: Implement backup import logic
-            // Import from JSON file
-            // Validate and restore data
+            syncManager.performRestore()
         }
     }
 
@@ -211,32 +193,32 @@ class SettingsViewModel @Inject constructor(
         // Or show in-app rating dialog
     }
 
-    /**
-     * Handle delete all notes request
-     */
-    fun onDeleteAllNotesRequested() {
-        showDeleteAllDialog = true
-    }
-
-    /**
-     * Confirm delete all notes
-     */
-    fun onDeleteAllNotesConfirmed() {
+    fun linkGoogleAccount(idToken: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            // TODO: Delete all notes from database
-            // Show confirmation message
-            // Navigate to empty state
+            val result = authRepository.linkGoogleAccount(idToken)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to link account")
+            }
         }
     }
 
-    /**
-     * Handle reset settings request
-     */
-    fun onResetSettingsRequested() {
+    fun unlinkGoogleAccount(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
-            // TODO: Reset all settings to default
-            _uiState.value = SettingState() // Reset to default
-            // TODO: Clear all SharedPreferences/DataStore
+            val result = authRepository.unlinkGoogleAccount()
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                onError(result.exceptionOrNull()?.localizedMessage ?: "Failed to unlink account")
+            }
+        }
+    }
+
+    fun signOut(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.signOut()
+            onComplete()
         }
     }
 }

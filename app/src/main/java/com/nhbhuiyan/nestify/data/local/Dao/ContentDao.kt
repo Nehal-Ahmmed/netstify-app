@@ -93,4 +93,7 @@ interface ContentDao {
 
     @Query("select * from links where folderId = :folderId order by createdAt desc")
     fun getLinksByFolder(folderId: Long): Flow<List<LinkEntity>>
+
+    @Query("select * from file_folders")
+    fun getAllFileFolders(): Flow<List<FileFolderEntity>>
 }

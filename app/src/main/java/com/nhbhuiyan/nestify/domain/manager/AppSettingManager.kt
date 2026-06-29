@@ -10,4 +10,8 @@ class AppSettingManager @Inject constructor(
     //dark theme
     val isDarkMode : Flow<Boolean> = settingRepo.isDarkTheme
     suspend fun setDarkTheme(isDark : Boolean) = settingRepo.setDarkTheme(isDark = isDark)
+
+    // 3-way theme mode ("system" | "light" | "dark")
+    val themeMode : Flow<String> = settingRepo.themeMode
+    suspend fun setThemeMode(mode : String) = settingRepo.setThemeMode(mode)
 }

@@ -4,47 +4,50 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.domain.model.Note
 import com.nhbhuiyan.nestify.presentation.navigation.Components.Route
 import com.nhbhuiyan.nestify.presentation.ui.components.DynamicUserFrameNotebook
-import com.nhbhuiyan.nestify.presentation.ui.components.LoadingShimmer
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.GlassNavSpace
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconTile
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SearchBarPill
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data.NotesViewModel
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NotesListScreen(navController: NavController) {
     val viewModel: NotesViewModel = hiltViewModel()
     val state = viewModel.uiState.collectAsState()
-    
+    val c = NestifyTheme.colors
+
     // State for modern features
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -53,9 +56,8 @@ fun NotesListScreen(navController: NavController) {
     val isSelectionMode = selectedNotes.isNotEmpty()
 
     val keyboardController = LocalSoftwareKeyboardController.current
-    val searchFocusRequester = remember { FocusRequester() }
     val context = LocalContext.current
-    
+
     val backgroundBitmap = remember {
         BitmapFactory.decodeResource(context.resources, R.drawable.a2y6_21s0_220127)
     }
@@ -65,241 +67,164 @@ fun NotesListScreen(navController: NavController) {
         searchQuery.isEmpty() || note.content.contains(searchQuery, ignoreCase = true)
     }
 
-    Scaffold(
-        topBar = {
-            if (isSearchActive) {
-                SearchTopBar(
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { searchQuery = it },
-                    onSearchActiveChange = { isSearchActive = it },
-                    focusRequester = searchFocusRequester,
-                    onClose = {
-                        isSearchActive = false
-                        searchQuery = ""
-                        keyboardController?.hide()
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas),
+    ) {
+        NestifyAppBar(
+            title = if (isSelectionMode) "${selectedNotes.size} selected" else "Daily Notes",
+            onBack = if (isSelectionMode) {
+                { selectedNotes = emptySet() }
+            } else {
+                { navController.popBackStack() }
+            },
+            trailing = {
+                if (isSelectionMode) {
+                    IconButtonChrome(
+                        Icons.Default.SelectAll,
+                        onClick = {
+                            selectedNotes = if (selectedNotes.size == filteredNotes.size) {
+                                emptySet()
+                            } else {
+                                filteredNotes.map { it.id }.toSet()
+                            }
+                        },
+                        contentDescription = "Select all",
+                    )
+                    IconButtonChrome(
+                        Icons.Default.Delete,
+                        onClick = {
+                            selectedNotes.forEach { id -> viewModel.deleteNote(id) }
+                            selectedNotes = emptySet()
+                        },
+                        tint = c.coral,
+                        contentDescription = "Delete selected",
+                    )
+                } else {
+                    if (state.value.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = c.brand,
+                        )
+                        Spacer(Modifier.width(Space.s))
                     }
-                )
-            } else {
-                MainTopBar(
-                    title = "Daily Notes",
-                    isLoading = state.value.isLoading,
-                    isSelectionMode = isSelectionMode,
-                    selectedCount = selectedNotes.size,
-                    onBackClick = { navController.popBackStack() },
-                    onSearchClick = {
-                        isSearchActive = true
-                    },
-                    onViewModeChange = {
-                        viewMode = if (viewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
-                    },
-                    onSelectAll = {
-                        selectedNotes = if (selectedNotes.size == filteredNotes.size) {
-                            emptySet()
-                        } else {
-                            filteredNotes.map { it.id }.toSet()
-                        }
-                    },
-                    onDeleteSelected = {
-                        selectedNotes.forEach { id ->
-                            viewModel.deleteNote(id)
-                        }
-                        selectedNotes = emptySet()
-                    },
-                    onClearSelection = { selectedNotes = emptySet() }
-                )
-            }
-        },
-        floatingActionButton = {
-            if (!isSelectionMode) {
-                FloatingActionButton(
-                    onClick = {
-                        navController.navigate(Route.createNote.route)
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Note")
-                }
-            }
-        }
-    ) { padding ->
-        if (state.value.isLoading) {
-            LoadingShimmer()
-        } else {
-            when (viewMode) {
-                ViewMode.LIST -> NotesListView(
-                    notes = filteredNotes,
-                    navController = navController,
-                    selectedNotes = selectedNotes,
-                    backgroundBitmap = backgroundBitmap,
-                    onNoteSelected = { id ->
-                        selectedNotes = if (selectedNotes.contains(id)) {
-                            selectedNotes - id
-                        } else {
-                            selectedNotes + id
-                        }
-                    },
-                    modifier = Modifier.padding(padding)
-                )
-                ViewMode.GRID -> NotesGridView(
-                    notes = filteredNotes,
-                    navController = navController,
-                    selectedNotes = selectedNotes,
-                    backgroundBitmap = backgroundBitmap,
-                    onNoteSelected = { id ->
-                        selectedNotes = if (selectedNotes.contains(id)) {
-                            selectedNotes - id
-                        } else {
-                            selectedNotes + id
-                        }
-                    },
-                    modifier = Modifier.padding(padding)
-                )
-            }
-        }
-
-        // Empty state
-        if (filteredNotes.isEmpty() && !state.value.isLoading) {
-            EmptyNotesState(
-                hasSearchQuery = searchQuery.isNotEmpty(),
-                onClearSearch = { searchQuery = "" }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MainTopBar(
-    title: String,
-    isLoading: Boolean,
-    isSelectionMode: Boolean,
-    selectedCount: Int,
-    onBackClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onViewModeChange: () -> Unit,
-    onSelectAll: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onClearSelection: () -> Unit
-) {
-    CenterAlignedTopAppBar(
-        title = {
-            if (isSelectionMode) {
-                Text(
-                    text = "$selectedCount selected",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Cursive,
-                        fontSize = 32.sp
+                    IconButtonChrome(
+                        if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                        onClick = {
+                            if (isSearchActive) {
+                                isSearchActive = false
+                                searchQuery = ""
+                                keyboardController?.hide()
+                            } else {
+                                isSearchActive = true
+                            }
+                        },
+                        contentDescription = "Search",
                     )
-                )
-            }
-        },
-        navigationIcon = {
-            if (isSelectionMode) {
-                IconButton(onClick = onClearSelection) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear selection")
-                }
-            } else {
-                IconButton(onClick = onBackClick) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-            }
-        },
-        actions = {
-            if (isSelectionMode) {
-                IconButton(onClick = onSelectAll) {
-                    Icon(Icons.Default.SelectAll, contentDescription = "Select all")
-                }
-                IconButton(onClick = onDeleteSelected) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete selected")
-                }
-            } else {
-                IconButton(onClick = onSearchClick) {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                }
-                IconButton(onClick = onViewModeChange) {
-                    Icon(
-                        imageVector = Icons.Default.Dashboard,
-                        contentDescription = "Change view mode"
+                    IconButtonChrome(
+                        Icons.Default.Dashboard,
+                        onClick = {
+                            viewMode = if (viewMode == ViewMode.LIST) ViewMode.GRID else ViewMode.LIST
+                        },
+                        contentDescription = "Change view mode",
+                    )
+                    IconTile(
+                        Icons.Default.Add,
+                        modifier = Modifier
+                            .clip(Radii.s)
+                            .clickable { navController.navigate(Route.createNote.route) },
                     )
                 }
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface
+            },
         )
-    )
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchTopBar(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onSearchActiveChange: (Boolean) -> Unit,
-    focusRequester: FocusRequester,
-    onClose: () -> Unit
-) {
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboardController?.show()
-    }
-
-    CenterAlignedTopAppBar(
-        title = {
-            TextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier
+        if (isSearchActive) {
+            Column(
+                Modifier
                     .fillMaxWidth()
-                    .focusRequester(focusRequester),
-                placeholder = { Text("Search notes...") },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = { keyboardController?.hide() }
+                    .background(c.surface)
+                    .padding(horizontal = Space.screen, vertical = Space.m),
+            ) {
+                SearchBarPill(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Search notes…",
                 )
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
-        },
-        actions = {
-            if (searchQuery.isNotEmpty()) {
-                IconButton(onClick = { onSearchQueryChange("") }) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear search")
+        }
+
+        when {
+            state.value.isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = c.brand)
+                }
+            }
+
+            filteredNotes.isEmpty() -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (searchQuery.isNotEmpty()) {
+                        EmptyState(
+                            icon = Icons.Default.Search,
+                            title = "No notes found",
+                            description = "Try different search terms or clear the search.",
+                            primaryLabel = "Clear search",
+                            onPrimary = { searchQuery = "" },
+                        )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Default.Edit,
+                            title = "Your canvas is empty",
+                            description = "Create your first sticky note by tapping the + button above.",
+                            primaryLabel = "New note",
+                            onPrimary = { navController.navigate(Route.createNote.route) },
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                val listPadding = PaddingValues(
+                    start = Space.screen,
+                    end = Space.screen,
+                    top = Space.l,
+                    bottom = GlassNavSpace,
+                )
+                when (viewMode) {
+                    ViewMode.LIST -> NotesListView(
+                        notes = filteredNotes,
+                        navController = navController,
+                        selectedNotes = selectedNotes,
+                        backgroundBitmap = backgroundBitmap,
+                        onNoteSelected = { id ->
+                            selectedNotes = if (selectedNotes.contains(id)) {
+                                selectedNotes - id
+                            } else {
+                                selectedNotes + id
+                            }
+                        },
+                        contentPadding = listPadding,
+                    )
+
+                    ViewMode.GRID -> NotesGridView(
+                        notes = filteredNotes,
+                        navController = navController,
+                        selectedNotes = selectedNotes,
+                        backgroundBitmap = backgroundBitmap,
+                        onNoteSelected = { id ->
+                            selectedNotes = if (selectedNotes.contains(id)) {
+                                selectedNotes - id
+                            } else {
+                                selectedNotes + id
+                            }
+                        },
+                        contentPadding = listPadding,
+                    )
                 }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -309,11 +234,12 @@ fun NotesListView(
     selectedNotes: Set<Long>,
     backgroundBitmap: Bitmap,
     onNoteSelected: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(Space.screen),
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = contentPadding,
     ) {
         items(notes, key = { it.id }) { note ->
             StickyNoteItem(
@@ -330,7 +256,7 @@ fun NotesListView(
                 onLongClick = { onNoteSelected(note.id) },
                 modifier = Modifier.height(250.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Space.l))
         }
     }
 }
@@ -342,16 +268,17 @@ fun NotesGridView(
     selectedNotes: Set<Long>,
     backgroundBitmap: Bitmap,
     onNoteSelected: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(Space.screen),
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
+        contentPadding = contentPadding,
     ) {
         items(notes.chunked(2)) { rowNotes ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(Space.l)
             ) {
                 rowNotes.forEach { note ->
                     StickyNoteItem(
@@ -374,7 +301,7 @@ fun NotesGridView(
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Space.l))
         }
     }
 }
@@ -389,20 +316,18 @@ fun StickyNoteItem(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val containerColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-    } else {
-        Color.Transparent
-    }
+    val c = NestifyTheme.colors
+    val containerColor = if (isSelected) c.brandSoft else androidx.compose.ui.graphics.Color.Transparent
 
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .clip(Radii.m)
+            .background(containerColor)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .background(containerColor, RoundedCornerShape(12.dp))
             .padding(4.dp) // Slight padding so the selection color shows nicely behind
     ) {
         DynamicUserFrameNotebook(
@@ -412,62 +337,19 @@ fun StickyNoteItem(
             readOnly = true,
             modifier = Modifier.fillMaxSize()
         )
-        
+
         if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Selected",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
+            Box(
+                Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(24.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun EmptyNotesState(hasSearchQuery: Boolean, onClearSearch: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Edit,
-            contentDescription = "No notes",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = if (hasSearchQuery) "No notes found" else "Your Canvas is Empty",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = if (hasSearchQuery) {
-                "Try different search terms or clear search"
-            } else {
-                "Create your first sticky note by tapping the + button below."
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center
-        )
-
-        if (hasSearchQuery) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onClearSearch) {
-                Text("Clear Search")
+                    .padding(Space.s),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Selected",
+                    tint = c.brand,
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }

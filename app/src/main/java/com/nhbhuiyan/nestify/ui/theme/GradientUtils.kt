@@ -38,4 +38,23 @@ object NestifyGradients {
             )
         )
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BrainSton remake gradients
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Teal gradient for the uplifted Network FAB / primary CTAs. */
+    fun brandFab(): Brush = Brush.linearGradient(
+        colors = listOf(Brand, BrandDeep)
+    )
+
+    /** Deep teal-black wash for dark hero cards (CGPA / progress headers). */
+    fun darkHero(): Brush = Brush.linearGradient(
+        colors = listOf(Color(0xFF14201D), SurfaceDk)
+    )
+
+    /** Subtle brand-tint background wash. */
+    fun brandWash(): Brush = Brush.verticalGradient(
+        colors = listOf(BrandTint, BsSurface)
+    )
 }

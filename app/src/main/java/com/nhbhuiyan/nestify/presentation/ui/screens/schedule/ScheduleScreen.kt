@@ -2,17 +2,18 @@ package com.nhbhuiyan.nestify.presentation.ui.screens.schedule
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +26,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nhbhuiyan.nestify.domain.model.ReminderType
 import com.nhbhuiyan.nestify.domain.model.ScheduleCategory
 import com.nhbhuiyan.nestify.domain.model.ScheduleItem
-import com.nhbhuiyan.nestify.presentation.ui.components.NotebookSpreadComponent
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.GlassNavSpace
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconTile
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ScrollableTabPill
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -34,6 +46,7 @@ import kotlinx.coroutines.launch
 fun ScheduleScreen(
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
+    val c = NestifyTheme.colors
     val scheduleItemsByCategory by viewModel.scheduleItemsByCategory.collectAsState()
 
     val categories = remember {
@@ -63,91 +76,37 @@ fun ScheduleScreen(
         }
     }
 
-    Scaffold(
-        containerColor = Color(0xFFF8FAFB),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    editingItem = null
-                    showBottomSheet = true
-                },
-                containerColor = Color(0xFF2C3E50),
-                contentColor = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                elevation = FloatingActionButtonDefaults.elevation(8.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Schedule", modifier = Modifier.size(28.dp))
-            }
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .background(c.canvas)
         ) {
-            // Header Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "My Routine",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF2C3E50)
-                        )
-                        Text(
-                            text = "Manage your time effectively",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            // Category Selector (Tabs)
-            ScrollableTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                modifier = Modifier.fillMaxWidth(),
-                containerColor = Color.Transparent,
-                edgePadding = 24.dp,
-                divider = {},
-                indicator = { tabPositions ->
-                    if (pagerState.currentPage < tabPositions.size) {
-                        val color = Color(android.graphics.Color.parseColor(categories[pagerState.currentPage].colorHex))
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                            color = color
-                        )
-                    }
-                }
-            ) {
-                categories.forEachIndexed { index, category ->
-                    val isSelected = pagerState.currentPage == index
-                    Tab(
-                        selected = isSelected,
+            NestifyAppBar(
+                title = "My Routine",
+                subtitle = "Manage your time effectively",
+                trailing = {
+                    IconButtonChrome(
+                        icon = Icons.Default.Add,
                         onClick = {
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            editingItem = null
+                            showBottomSheet = true
                         },
-                        text = {
-                            Text(
-                                text = category.name,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color(0xFF2C3E50) else Color.Gray
-                            )
-                        }
+                        tint = c.brand,
+                        contentDescription = "Add Schedule"
                     )
                 }
-            }
+            )
+
+            // Category Selector (Tabs)
+            ScrollableTabPill(
+                tabs = categories.map { it.name },
+                active = pagerState.currentPage,
+                onChange = { index ->
+                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                },
+                modifier = Modifier.padding(horizontal = Space.screen, vertical = Space.m)
+            )
 
             HorizontalPager(
                 state = pagerState,
@@ -157,6 +116,7 @@ fun ScheduleScreen(
             ) { page ->
                 val category = categories[page]
                 val categoryItems = scheduleItemsByCategory[category.id] ?: emptyList()
+                val accent = Color(android.graphics.Color.parseColor(category.colorHex))
 
                 var selectedDayOfWeek by remember { mutableStateOf(1) }
                 var selectedDateOfMonth by remember { mutableStateOf(1) }
@@ -177,83 +137,75 @@ fun ScheduleScreen(
                     }
                 }
 
-                NotebookSpreadComponent(
-                    modifier = Modifier.fillMaxSize().padding(1.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = Space.screen)
                 ) {
-                    Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
 
-                        // Filter Toggle (Visible for all categories)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.End
+                    // Filter Toggle (Visible for all categories)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Space.m),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s, Alignment.End)
+                    ) {
+                        listOf("All", "Date wise").forEach { type ->
+                            val isSelected = filterType == type
+                            Chip(
+                                label = type,
+                                tone = if (isSelected) ChipTone.Default else ChipTone.Ghost,
+                                active = isSelected,
+                                onClick = { filterType = type }
+                            )
+                        }
+                    }
+
+                    // Dynamic Sub-Selector
+                    when (category.id) {
+                        1L -> {
+                            val scheduledDays = remember(categoryItems) { categoryItems.flatMap { it.daysOfWeek }.toSet() }
+                            DayOfWeekSelector(selectedDayOfWeek, accent, scheduledDays) { selectedDayOfWeek = it }
+                        }
+                        2L -> {
+                            val scheduledDates = remember(categoryItems) { categoryItems.mapNotNull { it.date?.toIntOrNull() }.toSet() }
+                            DateGridSelector(selectedDateOfMonth, accent, scheduledDates) { selectedDateOfMonth = it }
+                        }
+                        3L -> {
+                            val scheduledDatesForMonth = remember(categoryItems, selectedMonth) {
+                                categoryItems.filter {
+                                    it.date?.split("/")?.getOrNull(1)?.toIntOrNull() == selectedMonth
+                                }.mapNotNull {
+                                    it.date?.split("/")?.getOrNull(0)?.toIntOrNull()
+                                }.toSet()
+                            }
+                            YearlySelector(selectedMonth, selectedDateOfMonth, accent, scheduledDatesForMonth, onMonthChange = { selectedMonth = it }, onDateChange = { selectedDateOfMonth = it })
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Space.l))
+
+                    if (filteredItems.isEmpty()) {
+                        EmptyScheduleState()
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = GlassNavSpace),
+                            verticalArrangement = Arrangement.spacedBy(Space.m)
                         ) {
-                            listOf("All", "Date wise").forEach { type ->
-                                val isSelected = filterType == type
-                                Box(
-                                    modifier = Modifier
-                                        .padding(start = 8.dp)
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(if (isSelected) Color(0xFF2C3E50) else Color(0xFFECF0F1))
-                                        .clickable { filterType = type }
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                                ) {
-                                    Text(
-                                        text = type,
-                                        color = if (isSelected) Color.White else Color.Gray,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-
-                        // Dynamic Sub-Selector
-                        when (category.id) {
-                            1L -> {
-                                val scheduledDays = remember(categoryItems) { categoryItems.flatMap { it.daysOfWeek }.toSet() }
-                                DayOfWeekSelector(selectedDayOfWeek, scheduledDays) { selectedDayOfWeek = it }
-                            }
-                            2L -> {
-                                val scheduledDates = remember(categoryItems) { categoryItems.mapNotNull { it.date?.toIntOrNull() }.toSet() }
-                                DateGridSelector(selectedDateOfMonth, Color(0xFF9B59B6), scheduledDates) { selectedDateOfMonth = it }
-                            }
-                            3L -> {
-                                val scheduledDatesForMonth = remember(categoryItems, selectedMonth) {
-                                    categoryItems.filter {
-                                        it.date?.split("/")?.getOrNull(1)?.toIntOrNull() == selectedMonth
-                                    }.mapNotNull {
-                                        it.date?.split("/")?.getOrNull(0)?.toIntOrNull()
-                                    }.toSet()
-                                }
-                                YearlySelector(selectedMonth, selectedDateOfMonth, scheduledDatesForMonth, onMonthChange = { selectedMonth = it }, onDateChange = { selectedDateOfMonth = it })
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (filteredItems.isEmpty()) {
-                            EmptyScheduleState()
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(bottom = 100.dp)
-                            ) {
-                                items(filteredItems, key = { it.id }) { item ->
-                                    ScheduleTimelineItem(
-                                        item = item,
-                                        categoryColor = Color(android.graphics.Color.parseColor(category.colorHex)),
-                                        onDelete = { viewModel.deleteScheduleItem(item) },
-                                        onEdit = {
-                                            editingItem = item
-                                            showBottomSheet = true
-                                        },
-                                        onAlarmToggle = { updatedItem ->
-                                            viewModel.updateScheduleItem(updatedItem)
-                                        }
-                                    )
-                                }
+                            items(filteredItems, key = { it.id }) { item ->
+                                ScheduleTimelineItem(
+                                    item = item,
+                                    categoryColor = accent,
+                                    onDelete = { viewModel.deleteScheduleItem(item) },
+                                    onEdit = {
+                                        editingItem = item
+                                        showBottomSheet = true
+                                    },
+                                    onAlarmToggle = { updatedItem ->
+                                        viewModel.updateScheduleItem(updatedItem)
+                                    }
+                                )
                             }
                         }
                     }
@@ -261,30 +213,36 @@ fun ScheduleScreen(
             }
         }
 
-        if (showBottomSheet) {
-            ScheduleCreationSheet(
-                sheetState = sheetState,
-                categoryId = categories[pagerState.currentPage].id,
-                editingItem = editingItem,
-                onDismissRequest = {
-                    showBottomSheet = false
-                    editingItem = null
-                },
-                onSaveSchedule = { item ->
-                    if (editingItem != null) {
-                        viewModel.updateScheduleItem(item)
-                    } else {
-                        viewModel.addScheduleItem(item)
-                    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
+    if (showBottomSheet) {
+        ScheduleCreationSheet(
+            sheetState = sheetState,
+            categoryId = categories[pagerState.currentPage].id,
+            editingItem = editingItem,
+            onDismissRequest = {
+                showBottomSheet = false
+                editingItem = null
+            },
+            onSaveSchedule = { item ->
+                if (editingItem != null) {
+                    viewModel.updateScheduleItem(item)
+                } else {
+                    viewModel.addScheduleItem(item)
                 }
-            )
-        }
+            }
+        )
     }
 }
 
 
 @Composable
-fun DayOfWeekSelector(selectedDay: Int, scheduledDays: Set<Int>, onDaySelected: (Int) -> Unit) {
+fun DayOfWeekSelector(selectedDay: Int, accentColor: Color, scheduledDays: Set<Int>, onDaySelected: (Int) -> Unit) {
+    val c = NestifyTheme.colors
     val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -297,10 +255,10 @@ fun DayOfWeekSelector(selectedDay: Int, scheduledDays: Set<Int>, onDaySelected: 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(Radii.m)
                     .background(
-                        if (isSelected) Color(0xFF3498DB)
-                        else if (isScheduled) Color(0xFF3498DB).copy(alpha = 0.2f)
+                        if (isSelected) accentColor
+                        else if (isScheduled) accentColor.copy(alpha = 0.15f)
                         else Color.Transparent
                     )
                     .clickable { onDaySelected(dayNum) }
@@ -308,15 +266,13 @@ fun DayOfWeekSelector(selectedDay: Int, scheduledDays: Set<Int>, onDaySelected: 
             ) {
                 Text(
                     text = day.take(1),
-                    color = if (isSelected) Color.White else if (isScheduled) Color(0xFF3498DB) else Color.Gray,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    style = NestifyTheme.type.meta,
+                    color = if (isSelected) Color.White else if (isScheduled) accentColor else c.ink50,
                 )
                 Text(
                     text = dayNum.toString(),
-                    color = if (isSelected) Color.White else Color.Black,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold
+                    style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold),
+                    color = if (isSelected) Color.White else c.ink,
                 )
             }
         }
@@ -326,6 +282,7 @@ fun DayOfWeekSelector(selectedDay: Int, scheduledDays: Set<Int>, onDaySelected: 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DateGridSelector(selectedDate: Int, accentColor: Color, scheduledDates: Set<Int>, onDateSelected: (Int) -> Unit) {
+    val c = NestifyTheme.colors
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         maxItemsInEachRow = 7,
@@ -338,20 +295,19 @@ fun DateGridSelector(selectedDate: Int, accentColor: Color, scheduledDates: Set<
                 modifier = Modifier
                     .padding(2.dp)
                     .size(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(Radii.s)
                     .background(
                         if (isSelected) accentColor
-                        else if (isScheduled) accentColor.copy(alpha = 0.2f)
-                        else Color(0xFFF0F3F4)
+                        else if (isScheduled) accentColor.copy(alpha = 0.15f)
+                        else c.surface2
                     )
                     .clickable { onDateSelected(day) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = day.toString(),
-                    color = if (isSelected) Color.White else if (isScheduled) accentColor else Color.Black,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+                    style = NestifyTheme.type.label.copy(fontWeight = FontWeight.Medium),
+                    color = if (isSelected) Color.White else if (isScheduled) accentColor else c.ink,
                 )
             }
         }
@@ -359,7 +315,8 @@ fun DateGridSelector(selectedDate: Int, accentColor: Color, scheduledDates: Set<
 }
 
 @Composable
-fun YearlySelector(selectedMonth: Int, selectedDate: Int, scheduledDates: Set<Int>, onMonthChange: (Int) -> Unit, onDateChange: (Int) -> Unit) {
+fun YearlySelector(selectedMonth: Int, selectedDate: Int, accentColor: Color, scheduledDates: Set<Int>, onMonthChange: (Int) -> Unit, onDateChange: (Int) -> Unit) {
+    val c = NestifyTheme.colors
     val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
     Column {
         Row(
@@ -367,20 +324,25 @@ fun YearlySelector(selectedMonth: Int, selectedDate: Int, scheduledDates: Set<In
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { if (selectedMonth > 1) onMonthChange(selectedMonth - 1) }) {
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Prev")
-            }
+            IconButtonChrome(
+                icon = Icons.Default.KeyboardArrowLeft,
+                onClick = { if (selectedMonth > 1) onMonthChange(selectedMonth - 1) },
+                tint = c.ink70,
+                contentDescription = "Prev"
+            )
             Text(
                 text = months[selectedMonth - 1].uppercase(),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 2.sp
+                style = NestifyTheme.type.kicker,
+                color = c.ink,
             )
-            IconButton(onClick = { if (selectedMonth < 12) onMonthChange(selectedMonth + 1) }) {
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Next")
-            }
+            IconButtonChrome(
+                icon = Icons.Default.KeyboardArrowRight,
+                onClick = { if (selectedMonth < 12) onMonthChange(selectedMonth + 1) },
+                tint = c.ink70,
+                contentDescription = "Next"
+            )
         }
-        DateGridSelector(selectedDate, Color(0xFF27AE60), scheduledDates, onDateChange)
+        DateGridSelector(selectedDate, accentColor, scheduledDates, onDateChange)
     }
 }
 
@@ -392,25 +354,27 @@ fun ScheduleTimelineItem(
     onEdit: () -> Unit,
     onAlarmToggle: (ScheduleItem) -> Unit
 ) {
+    val c = NestifyTheme.colors
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDetailsDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Schedule") },
-            text = { Text("Are you sure you want to delete this schedule?") },
+            containerColor = c.surface,
+            title = { Text("Delete Schedule", style = NestifyTheme.type.h3Serif, color = c.ink) },
+            text = { Text("Are you sure you want to delete this schedule?", style = NestifyTheme.type.body, color = c.ink70) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete()
                     showDeleteDialog = false
                 }) {
-                    Text("Delete", color = Color.Red)
+                    Text("Delete", color = c.coral)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = c.ink70)
                 }
             }
         )
@@ -419,22 +383,23 @@ fun ScheduleTimelineItem(
     if (showDetailsDialog) {
         AlertDialog(
             onDismissRequest = { showDetailsDialog = false },
-            title = { Text(item.title, fontWeight = FontWeight.Bold) },
+            containerColor = c.surface,
+            title = { Text(item.title, style = NestifyTheme.type.h3Serif, color = c.ink) },
             text = {
                 Column {
-                    Text(item.description.ifBlank { "No description provided." })
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Time: ${item.fromTime / 60}:${(item.fromTime % 60).toString().padStart(2, '0')} - ${item.toTime / 60}:${(item.toTime % 60).toString().padStart(2, '0')}", fontWeight = FontWeight.Medium)
+                    Text(item.description.ifBlank { "No description provided." }, style = NestifyTheme.type.body, color = c.ink70)
+                    Spacer(modifier = Modifier.height(Space.s))
+                    Text("Time: ${item.fromTime / 60}:${(item.fromTime % 60).toString().padStart(2, '0')} - ${item.toTime / 60}:${(item.toTime % 60).toString().padStart(2, '0')}", style = NestifyTheme.type.label, color = c.ink)
                     if (item.date != null) {
-                        Text("Date: ${item.date}")
+                        Text("Date: ${item.date}", style = NestifyTheme.type.label, color = c.ink70)
                     }
-                    Text("Repeat: ${item.repeatStrategy.name.lowercase().replaceFirstChar { it.uppercase() }}")
-                    Text("Reminder: ${item.reminderType.name.lowercase().replaceFirstChar { it.uppercase() }}")
+                    Text("Repeat: ${item.repeatStrategy.name.lowercase().replaceFirstChar { it.uppercase() }}", style = NestifyTheme.type.label, color = c.ink70)
+                    Text("Reminder: ${item.reminderType.name.lowercase().replaceFirstChar { it.uppercase() }}", style = NestifyTheme.type.label, color = c.ink70)
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showDetailsDialog = false }) {
-                    Text("Close")
+                    Text("Close", color = c.brand)
                 }
             }
         )
@@ -444,24 +409,21 @@ fun ScheduleTimelineItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(vertical = 8.dp)
-            .clickable { showDetailsDialog = true }
     ) {
         // Time Indicator
         Column(
-            modifier = Modifier.width(60.dp),
+            modifier = Modifier.width(56.dp).padding(top = Space.s),
             horizontalAlignment = Alignment.End
         ) {
             Text(
                 text = "${item.fromTime / 60}:${(item.fromTime % 60).toString().padStart(2, '0')}",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2C3E50)
+                style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold),
+                color = c.ink
             )
             Text(
                 text = if (item.fromTime < 720) "AM" else "PM",
-                fontSize = 10.sp,
-                color = Color.Gray
+                style = NestifyTheme.type.meta,
+                color = c.ink50
             )
         }
 
@@ -469,37 +431,33 @@ fun ScheduleTimelineItem(
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = Space.m),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
+                    .padding(top = Space.s)
                     .size(12.dp)
-                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .clip(CircleShape)
                     .background(categoryColor)
             )
-            VerticalDivider(
-                modifier = Modifier.weight(1f).width(2.dp),
-                color = Color(0xFFECF0F1)
+            Box(
+                modifier = Modifier.weight(1f).width(2.dp).background(c.hair2)
             )
         }
 
         // Card Content
-        Card(
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        NestifyCard(
+            modifier = Modifier.weight(1f),
+            padding = Space.l,
+            onClick = { showDetailsDialog = true }
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = item.title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF2C3E50),
+                        style = NestifyTheme.type.h3Serif,
+                        color = c.ink,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -519,7 +477,7 @@ fun ScheduleTimelineItem(
                             Icon(
                                 imageVector = if (item.reminderType == ReminderType.ALARM || item.reminderType == ReminderType.BOTH) Icons.Default.Alarm else Icons.Default.AlarmOff,
                                 contentDescription = "Toggle Alarm",
-                                tint = if (item.reminderType == ReminderType.ALARM || item.reminderType == ReminderType.BOTH) Color(0xFFE67E22) else Color.Gray,
+                                tint = if (item.reminderType == ReminderType.ALARM || item.reminderType == ReminderType.BOTH) c.warn else c.ink50,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -539,17 +497,17 @@ fun ScheduleTimelineItem(
                             Icon(
                                 imageVector = if (item.reminderType == ReminderType.NOTIFICATION || item.reminderType == ReminderType.BOTH) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
                                 contentDescription = "Toggle Notification",
-                                tint = if (item.reminderType == ReminderType.NOTIFICATION || item.reminderType == ReminderType.BOTH) Color(0xFF3498DB) else Color.Gray,
+                                tint = if (item.reminderType == ReminderType.NOTIFICATION || item.reminderType == ReminderType.BOTH) c.brand else c.ink50,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
 
                         IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = c.ink50, modifier = Modifier.size(18.dp))
                         }
 
                         IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = c.coral, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -557,45 +515,32 @@ fun ScheduleTimelineItem(
                 if (item.description.isNotBlank()) {
                     Text(
                         text = item.description,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
+                        style = NestifyTheme.type.body,
+                        color = c.ink50,
                         maxLines = 2,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = Space.xs)
                     )
                 }
                 Row(
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = Space.m),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
-                        tint = Color.Gray,
+                        tint = c.ink50,
                         modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(Space.xs))
                     Text(
                         text = item.totalDuration,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Bold
+                        style = NestifyTheme.type.label.copy(fontWeight = FontWeight.Medium),
+                        color = c.ink50,
                     )
 
                     if (item.isAutoTask) {
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Auto",
-                            tint = Color(0xFF9B59B6),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Auto",
-                            fontSize = 10.sp,
-                            color = Color(0xFF9B59B6),
-                            fontWeight = FontWeight.Bold
-                        )
+                        Spacer(modifier = Modifier.width(Space.m))
+                        Chip(label = "Auto", tone = ChipTone.Soft, leadingIcon = Icons.Default.AutoAwesome)
                     }
                 }
             }
@@ -605,27 +550,9 @@ fun ScheduleTimelineItem(
 
 @Composable
 fun EmptyScheduleState() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(top = 40.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.EventNote,
-            contentDescription = null,
-            tint = Color(0xFFECF0F1),
-            modifier = Modifier.size(80.dp)
-        )
-        Text(
-            text = "No schedules for today",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.LightGray
-        )
-        Text(
-            text = "Enjoy your free time!",
-            fontSize = 14.sp,
-            color = Color.LightGray
-        )
-    }
+    EmptyState(
+        icon = Icons.Default.EventNote,
+        title = "No schedules for today",
+        description = "Enjoy your free time!"
+    )
 }

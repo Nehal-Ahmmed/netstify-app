@@ -24,5 +24,6 @@ data class SyllabusTopicEntity(
     val title: String,
     val isCompleted: Boolean = false,
     val isRevised: Boolean = false,
-    val priority: Int = 3 // 1-5 Stars
+    val priority: Int = 3, // 1-5 Stars
+    val firestoreId: String? = null
 )

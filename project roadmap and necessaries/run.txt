@@ -6,3 +6,16 @@ android run --device=eec7c7f0000 --apks=app\build\outputs\apk\debug\app-debug.ap
 
 
 
+# .\gradlew.bat installDebug -t --offline
+
+
+
+# or you can use this approach:
+1. build and install the app to device connected :
+    .\gradlew installDebug
+2 . then launch on device :
+
+    adb shell am start -n com.nhbhuiyan.nestify/com.nhbhuiyan.nestify.MainActivity
+
+
+    

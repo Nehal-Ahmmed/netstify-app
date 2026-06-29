@@ -1,254 +1,161 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner
 
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.outlined.WorkspacePremium
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.nhbhuiyan.nestify.ui.theme.*
-import androidx.compose.runtime.collectAsState
-import com.nhbhuiyan.nestify.data.local.entity.SubjectEntity
 import com.nhbhuiyan.nestify.data.local.entity.TermReportEntity
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.OneLine
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.StatRow
+import com.nhbhuiyan.nestify.ui.theme.NestifyGradients
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Space
 
 data class CourseGrade(
     val subjectCode: String,
     val subjectName: String,
     val credits: Float,
-    var selectedGrade: String = "Pending"
+    var selectedGrade: String = "Pending",
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExamResultsTab(viewModel: ExamPlannerViewModel) {
+fun ExamResultsTab(
+    viewModel: ExamPlannerViewModel,
+    defaultLevel: Int,
+    defaultTerm: Int,
+) {
+    val c = NestifyTheme.colors
     val context = LocalContext.current
     val grades = listOf("A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F", "Pending")
 
     val subjectsList by viewModel.subjects.collectAsState()
 
-    var filterLevel by remember { mutableIntStateOf(2) }
-    var filterTerm by remember { mutableIntStateOf(2) }
+    var filterLevel by remember(defaultLevel) { mutableIntStateOf(defaultLevel) }
+    var filterTerm by remember(defaultTerm) { mutableIntStateOf(defaultTerm) }
+    val isEditable = filterLevel == defaultLevel && filterTerm == defaultTerm
 
     val filteredSubjects = remember(subjectsList, filterLevel, filterTerm) {
         subjectsList.filter { it.level == filterLevel && it.term == filterTerm }
     }
 
-    // Calculations
     val gradedCourses = filteredSubjects.filter { it.finalGrade != "Pending" }
-    val totalCredits = gradedCourses.map { it.credits }.sum()
-    val weightedGpSum = gradedCourses.map { it.credits * (AcademicGradingEngine.gradeToGp(it.finalGrade)) }.sum()
-    val calculatedGpa = if (totalCredits > 0) weightedGpSum / totalCredits else 0.00f
+    val totalCredits = gradedCourses.sumOf { it.credits.toDouble() }.toFloat()
+    val weightedGpSum = gradedCourses.sumOf { (it.credits * AcademicGradingEngine.gradeToGp(it.finalGrade)).toDouble() }.toFloat()
+    val calculatedGpa = if (totalCredits > 0) weightedGpSum / totalCredits else 0f
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(start = Space.screen, end = Space.screen, top = Space.s, bottom = AcademicNavClearance),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        // Filter Header Bar
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.05f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = null,
-                            tint = NestifySlate,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Viewing Filter:",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = NestifySlate
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(NestifySlate.copy(alpha = 0.05f))
-                                .clickable {
-                                    filterLevel = if (filterLevel == 4) 1 else filterLevel + 1
-                                }
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("L$filterLevel", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
-                            Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = NestifySlate)
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(NestifySlate.copy(alpha = 0.05f))
-                                .clickable {
-                                    filterTerm = if (filterTerm == 2) 1 else 2
-                                }
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("T$filterTerm", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
-                            Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = NestifySlate)
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            // GPA Display Banner
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(Color(0xFF27AE60), Color(0xFF1E8449))
-                            )
-                        )
-                        .padding(20.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                "Term GPA Result (L$filterLevel T$filterTerm)",
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = String.format("%.2f", calculatedGpa),
-                                color = Color.White,
-                                fontSize = 38.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(56.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
-            Text(
-                "Acquired Grades Setup",
-                fontWeight = FontWeight.Black,
-                fontSize = 17.sp,
-                color = NestifySlate
+            LevelTermFilter(
+                level = filterLevel, term = filterTerm,
+                onLevel = { filterLevel = it }, onTerm = { filterTerm = it },
             )
         }
 
-        items(filteredSubjects) { course ->
-            var expanded by remember { mutableStateOf(false) }
-
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.05f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            course.code,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = NestifySlate
-                        )
-                        Text(
-                            course.name,
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            maxLines = 1
-                        )
-                        Text(
-                            "${course.credits} Credits",
-                            fontSize = 10.sp,
-                            color = NestifySlate.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Grade Select Box
-                    Box {
-                        Surface(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(NestifySlate.copy(alpha = 0.05f))
-                                .clickable { expanded = true }
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            color = Color.Transparent
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    course.finalGrade,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp,
-                                    color = if (course.finalGrade == "Pending") Color.Gray else NestifySlate
-                                )
-                                Icon(Icons.Default.ArrowDropDown, null, tint = NestifySlate)
-                            }
+        // Dark progress hero
+        item {
+            NestifyCard(Modifier.fillMaxWidth(), background = c.surfaceDk, padding = Space.xl) {
+                Box(Modifier.fillMaxWidth().background(NestifyGradients.darkHero())) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Kicker("TERM RESULT · L$filterLevel T$filterTerm", color = Color.White.copy(alpha = 0.6f))
+                            Spacer(Modifier.height(Space.s))
+                            Text(String.format("%.2f", calculatedGpa), style = NestifyTheme.type.displaySerif, color = Color.White)
+                            Spacer(Modifier.height(Space.m))
+                            StatRow(
+                                stats = listOf(
+                                    "${gradedCourses.size}/${filteredSubjects.size}" to "Graded",
+                                    (if (totalCredits % 1f == 0f) totalCredits.toInt().toString() else String.format("%.1f", totalCredits)) to "Credits",
+                                    String.format("%.2f", calculatedGpa) to "GPA",
+                                ),
+                                valueColor = Color.White,
+                                labelColor = Color.White.copy(alpha = 0.6f),
+                                dividerColor = Color.White.copy(alpha = 0.15f),
+                            )
                         }
+                        Icon(Icons.Outlined.WorkspacePremium, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.height(56.dp))
+                    }
+                }
+            }
+        }
 
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            grades.forEach { g ->
-                                DropdownMenuItem(
-                                    text = { Text(g, fontWeight = FontWeight.Bold) },
-                                    onClick = {
-                                        viewModel.updateSubject(course.copy(finalGrade = g))
-                                        expanded = false
-                                    }
+        item { SectionHead(title = "Acquired grades", kicker = "Per subject") }
+
+        if (filteredSubjects.isEmpty()) {
+            item {
+                EmptyState(
+                    icon = Icons.Outlined.WorkspacePremium,
+                    title = "No subjects",
+                    description = "Add courses to this term to record final grades.",
+                )
+            }
+        } else {
+            items(filteredSubjects) { course ->
+                var expanded by remember { mutableStateOf(false) }
+                NestifyCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            OneLine(course.code, style = NestifyTheme.type.label.copy(fontWeight = FontWeight.SemiBold), color = c.ink)
+                            OneLine(course.name, style = NestifyTheme.type.meta, color = c.ink50)
+                            Kicker("${course.credits} credits")
+                        }
+                        Box {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Chip(
+                                    course.finalGrade,
+                                    tone = gradeTone(course.finalGrade),
+                                    onClick = { if (isEditable) expanded = true },
                                 )
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = c.ink50)
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                grades.forEach { g ->
+                                    DropdownMenuItem(
+                                        text = { Text(g, fontWeight = FontWeight.SemiBold) },
+                                        onClick = {
+                                            viewModel.updateSubject(course.copy(finalGrade = g))
+                                            expanded = false
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -256,110 +163,41 @@ fun ExamResultsTab(viewModel: ExamPlannerViewModel) {
             }
         }
 
+        // Actions & export
         item {
-            Spacer(modifier = Modifier.height(8.dp))
-            // PDF & Share Action Cards
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.08f))
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        "Actions & Export",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = NestifySlate
-                    )
-
-                    Button(
-                        onClick = {
-                            viewModel.insertTermReport(
-                                TermReportEntity(
-                                    level = filterLevel,
-                                    term = filterTerm,
-                                    gpa = calculatedGpa,
-                                    pdfLocalPath = "cache/REP_L${filterLevel}T${filterTerm}.pdf",
-                                    timestamp = System.currentTimeMillis()
-                                )
+            Spacer(Modifier.height(Space.s))
+            NestifyCard(Modifier.fillMaxWidth()) {
+                Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
+                    Text("Actions & export", style = NestifyTheme.type.h3Serif, color = c.ink)
+                    NButton("Save to CGPA dashboard", {
+                        viewModel.insertTermReport(
+                            TermReportEntity(
+                                level = filterLevel,
+                                term = filterTerm,
+                                gpa = calculatedGpa,
+                                pdfLocalPath = "cache/REP_L${filterLevel}T${filterTerm}.pdf",
+                                timestamp = System.currentTimeMillis(),
                             )
-                            Toast.makeText(context, "Saved L${filterLevel}T${filterTerm} report to database dashboard!", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = NestifySlate)
-                    ) {
-                        Icon(Icons.Default.Save, null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Save to CGPA Dashboard", fontWeight = FontWeight.Bold)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                val pdfCourses = filteredSubjects.map { subject ->
-                                    CourseGrade(
-                                        subjectCode = subject.code,
-                                        subjectName = subject.name,
-                                        credits = subject.credits,
-                                        selectedGrade = subject.finalGrade
-                                    )
-                                }
-                                val file = AcademicPdfGenerator.generateTermPdf(
-                                    context = context,
-                                    level = filterLevel,
-                                    term = filterTerm,
-                                    gpa = calculatedGpa,
-                                    courses = pdfCourses
-                                )
-                                if (file != null) {
-                                    AcademicPdfGenerator.sharePdf(context, file)
-                                } else {
-                                    Toast.makeText(context, "Failed to generate report PDF", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share PDF")
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val pdfCourses = filteredSubjects.map { subject ->
-                                    CourseGrade(
-                                        subjectCode = subject.code,
-                                        subjectName = subject.name,
-                                        credits = subject.credits,
-                                        selectedGrade = subject.finalGrade
-                                    )
-                                }
-                                val file = AcademicPdfGenerator.generateTermPdf(
-                                    context = context,
-                                    level = filterLevel,
-                                    term = filterTerm,
-                                    gpa = calculatedGpa,
-                                    courses = pdfCourses
-                                )
-                                if (file != null) {
-                                    Toast.makeText(context, "PDF saved to Downloads folder", Toast.LENGTH_LONG).show()
-                                } else {
-                                    Toast.makeText(context, "Failed to generate report PDF", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            modifier = Modifier.weight(1.2f)
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Export PDF")
-                        }
+                        )
+                        Toast.makeText(context, "Saved L${filterLevel}T${filterTerm} report to dashboard!", Toast.LENGTH_SHORT).show()
+                    }, full = true)
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                        NButton("Share PDF", {
+                            val file = AcademicPdfGenerator.generateTermPdf(
+                                context = context, level = filterLevel, term = filterTerm, gpa = calculatedGpa,
+                                courses = filteredSubjects.map { CourseGrade(it.code, it.name, it.credits, it.finalGrade) },
+                            )
+                            if (file != null) AcademicPdfGenerator.sharePdf(context, file)
+                            else Toast.makeText(context, "Failed to generate report PDF", Toast.LENGTH_SHORT).show()
+                        }, modifier = Modifier.weight(1f), variant = BtnVariant.Secondary)
+                        NButton("Export PDF", {
+                            val file = AcademicPdfGenerator.generateTermPdf(
+                                context = context, level = filterLevel, term = filterTerm, gpa = calculatedGpa,
+                                courses = filteredSubjects.map { CourseGrade(it.code, it.name, it.credits, it.finalGrade) },
+                            )
+                            if (file != null) Toast.makeText(context, "PDF saved to Downloads folder", Toast.LENGTH_LONG).show()
+                            else Toast.makeText(context, "Failed to generate report PDF", Toast.LENGTH_SHORT).show()
+                        }, modifier = Modifier.weight(1f), variant = BtnVariant.Secondary)
                     }
                 }
             }

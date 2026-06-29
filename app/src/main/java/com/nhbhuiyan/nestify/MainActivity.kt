@@ -45,7 +45,12 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            val darktheme by appSettingManager.isDarkMode.collectAsState(initial = false)
+            val themeMode by appSettingManager.themeMode.collectAsState(initial = "system")
+            val darktheme = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> androidx.compose.foundation.isSystemInDarkTheme()
+            }
             NestifyTheme(darkTheme = darktheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

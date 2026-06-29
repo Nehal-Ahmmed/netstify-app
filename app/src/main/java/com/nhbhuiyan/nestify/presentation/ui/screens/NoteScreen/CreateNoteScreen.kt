@@ -5,30 +5,30 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.nhbhuiyan.nestify.R
 import com.nhbhuiyan.nestify.presentation.ui.components.DynamicUserFrameNotebook
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyAppBar
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data.CreateNoteState
 import com.nhbhuiyan.nestify.presentation.ui.screens.NoteScreen.data.CreateNoteViewModel
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateNoteScreen(
     navController: NavController,
     viewModel: CreateNoteViewModel = hiltViewModel()
 ) {
+    val c = NestifyTheme.colors
     val currentBackstack = navController.currentBackStackEntry
     val noteId = currentBackstack?.arguments?.getString("noteId")?.toLongOrNull()
     val uiState by viewModel.uiState.collectAsState()
@@ -43,7 +43,7 @@ fun CreateNoteScreen(
             viewModel.updateTitle("Sticky Note ${System.currentTimeMillis() % 10000}")
         }
     }
-    
+
     // Handle navigation after note creation
     LaunchedEffect(uiState.isNoteCreated) {
         if (uiState.isNoteCreated) {
@@ -51,94 +51,58 @@ fun CreateNoteScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            CreateNoteTopBar(
-                onBackClick = { navController.popBackStack() },
-                onSaveClick = {
-                    // Update title based on content if it's empty
-                    if (uiState.title.isEmpty() || uiState.title.startsWith("Sticky Note")) {
-                        val firstWords = uiState.content.split(" ").take(3).joinToString(" ")
-                        val newTitle = if (firstWords.isNotBlank()) firstWords else "New Sticky Note"
-                        viewModel.updateTitle(newTitle)
-                    }
-                    
-                    when(createOrUpdate){
-                        status.Create -> {
-                            viewModel.createNote()
-                            Log.d("CreateNoteScreen", "Note created")
-                        }
-                        status.Update -> {
-                            viewModel.updateNote()
-                            Log.d("CreateNoteScreen", "Note updated")
-                        }
-                    }
-                },
-                isLoading = uiState.isLoading
-            )
-        },
-        containerColor = Color(0xFFF8FAFD)
-    ) { paddingValues ->
+    val onSave = {
+        // Update title based on content if it's empty
+        if (uiState.title.isEmpty() || uiState.title.startsWith("Sticky Note")) {
+            val firstWords = uiState.content.split(" ").take(3).joinToString(" ")
+            val newTitle = if (firstWords.isNotBlank()) firstWords else "New Sticky Note"
+            viewModel.updateTitle(newTitle)
+        }
+
+        when (createOrUpdate) {
+            status.Create -> {
+                viewModel.createNote()
+                Log.d("CreateNoteScreen", "Note created")
+            }
+
+            status.Update -> {
+                viewModel.updateNote()
+                Log.d("CreateNoteScreen", "Note updated")
+            }
+        }
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(c.canvas),
+    ) {
+        NestifyAppBar(
+            title = "Write a Note",
+            onBack = { navController.popBackStack() },
+            trailing = {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = c.brand,
+                    )
+                } else {
+                    IconButtonChrome(
+                        Icons.Default.Check,
+                        onClick = { onSave() },
+                        tint = c.brand,
+                        contentDescription = "Save Note",
+                    )
+                }
+            },
+        )
         CreateNoteContent(
             uiState = uiState,
             onContentChange = { viewModel.updateContent(it) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize(),
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CreateNoteTopBar(
-    onBackClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    isLoading: Boolean
-) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = "Write a Note",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Cursive,
-                    fontSize = 32.sp
-                )
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-        },
-        actions = {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
-                )
-            } else {
-                IconButton(
-                    onClick = onSaveClick,
-                    enabled = !isLoading
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save Note",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color(0xFFF8FAFD),
-            titleContentColor = MaterialTheme.colorScheme.onSurface
-        )
-    )
 }
 
 @Composable
@@ -161,7 +125,7 @@ fun CreateNoteContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.8f) // Slightly taller than square for the note pad
-                .padding(16.dp)
+                .padding(Space.l)
         ) {
             DynamicUserFrameNotebook(
                 frameBitmap = backgroundBitmap,

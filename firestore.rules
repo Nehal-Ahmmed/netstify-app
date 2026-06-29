@@ -1,0 +1,144 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── HELPER FUNCTIONS ─────────────────────────────────────────────────────
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return 'role' in request.auth.token ? request.auth.token.role : getUserData().role;
+    }
+
+    function getRoleRank(roleName) {
+      return roleName == 'pending' ? 0 :
+             roleName == 'student' ? 1 :
+             roleName == 'cr' ? 2 :
+             roleName == 'admin' ? 3 :
+             roleName == 'superadmin' ? 4 : 0;
+    }
+
+    function hasRoleRank(minRank) {
+      return isSignedIn() && getRoleRank(getUserRole()) >= minRank;
+    }
+
+    function isMemberOfClass(classGroupId) {
+      return isSignedIn() && getUserData().classGroupId == classGroupId;
+    }
+
+    // ── COLLECTION RULES ─────────────────────────────────────────────────────
+
+    // /users/{uid}
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid 
+                    && request.resource.data.role == 'student'
+                    && request.resource.data.pendingReview == false
+                    && request.resource.data.email.matches('.*@student\\.cuet\\.ac\\.bd$');
+      allow update: if isSignedIn() && (
+                    // Self-update
+                    (request.auth.uid == uid
+                     && request.resource.data.role == resource.data.role
+                     && request.resource.data.classGroupId == resource.data.classGroupId
+                     && request.resource.data.email == resource.data.email)
+                    ||
+                    // Admin promotion/demotion within the same class group
+                    (hasRoleRank(3)
+                     && getUserData().classGroupId == resource.data.classGroupId
+                     && request.resource.data.classGroupId == resource.data.classGroupId
+                     && request.resource.data.email == resource.data.email
+                     && getRoleRank(request.resource.data.role) <= 2
+                     && getRoleRank(resource.data.role) <= 2)
+                    ||
+                    // Superadmin platform-wide role management
+                    (hasRoleRank(4))
+                  );
+      allow delete: if hasRoleRank(4); // SUPERADMIN only
+    }
+
+    // /classGroups/{groupId}
+    match /classGroups/{groupId} {
+      allow read: if isSignedIn();
+      allow write: if hasRoleRank(3); // ADMIN+
+
+      // Roster
+      match /roster/{uid} {
+        allow read: if isSignedIn();
+        // Allow user to register themselves once (prevents squatting)
+        allow create: if isSignedIn() && request.auth.uid == uid && !exists(/databases/$(database)/documents/classGroups/$(groupId)/roster/$(uid));
+        allow update, delete: if hasRoleRank(3); // ADMIN+
+      }
+
+      // Announcements
+      match /announcements/{announcementId} {
+        allow read: if isMemberOfClass(groupId) || hasRoleRank(3);
+        allow create, update, delete: if isMemberOfClass(groupId) && hasRoleRank(2); // CR+ of this class
+      }
+
+      // CT Marks
+      match /ctMarks/{semesterId}/{studentId}/marks {
+        allow read: if (isSignedIn() && getUserData().rollNumber == studentId && isMemberOfClass(groupId)) 
+                    || (isMemberOfClass(groupId) && hasRoleRank(2)) 
+                    || hasRoleRank(3);
+        allow write: if isMemberOfClass(groupId) && hasRoleRank(2);
+      }
+
+      // Merge Requests
+      match /mergeRequests/{mrId} {
+        allow read: if isMemberOfClass(groupId) || hasRoleRank(3);
+        allow create: if isMemberOfClass(groupId) && request.resource.data.submittedBy == request.auth.uid;
+        allow update, delete: if isMemberOfClass(groupId) && (
+          // Role changes require ADMIN+
+          (resource.data.type == 'role-change' && hasRoleRank(3)) ||
+          // Other requests require CR+
+          (resource.data.type != 'role-change' && hasRoleRank(2))
+        );
+      }
+
+      // Posts (Network Feed)
+      match /posts/{postId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid;
+        allow update: if isSignedIn() && resource.data.authorUid == request.auth.uid;
+        allow delete: if isSignedIn() && (resource.data.authorUid == request.auth.uid || (isMemberOfClass(groupId) && hasRoleRank(2)) || hasRoleRank(3));
+        
+        // Comments on posts
+        match /comments/{commentId} {
+          allow read: if isSignedIn();
+          allow create: if isSignedIn() && request.resource.data.authorUid == request.auth.uid;
+          allow update: if isSignedIn() && resource.data.authorUid == request.auth.uid;
+          allow delete: if isSignedIn() && (resource.data.authorUid == request.auth.uid || (isMemberOfClass(groupId) && hasRoleRank(2)) || hasRoleRank(3));
+        }
+      }
+    }
+
+    // /departments/{deptCode}
+    match /departments/{deptCode} {
+      allow read: if isSignedIn();
+      allow write: if hasRoleRank(3); // ADMIN+
+
+      // Nested subjects, topics, pyqs
+      match /semesters/{semesterId}/subjects/{subjectCode} {
+        allow read: if isSignedIn();
+        allow write: if hasRoleRank(2); // CR+
+
+        match /topics/{topicId} {
+          allow read: if isSignedIn();
+          allow write: if hasRoleRank(2); // CR+
+
+          match /pyqs/{pyqId} {
+            allow read: if isSignedIn();
+            allow write: if hasRoleRank(2); // CR+
+          }
+        }
+      }
+    }
+  }
+}

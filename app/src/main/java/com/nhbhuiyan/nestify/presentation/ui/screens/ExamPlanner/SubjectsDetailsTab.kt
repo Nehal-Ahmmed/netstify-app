@@ -1,394 +1,220 @@
 package com.nhbhuiyan.nestify.presentation.ui.screens.ExamPlanner
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.nhbhuiyan.nestify.ui.theme.*
-
 import com.nhbhuiyan.nestify.data.local.entity.SubjectEntity
+import com.nhbhuiyan.nestify.domain.model.UserRole
+import com.nhbhuiyan.nestify.presentation.ui.components.RoleGate
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnSize
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.BtnVariant
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Chip
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.ChipTone
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.EmptyState
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.IconButtonChrome
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.Kicker
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NButton
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyCard
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.NestifyInput
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.OneLine
+import com.nhbhuiyan.nestify.presentation.ui.components.brainston.SectionHead
+import com.nhbhuiyan.nestify.ui.theme.NestifyTheme
+import com.nhbhuiyan.nestify.ui.theme.Radii
+import com.nhbhuiyan.nestify.ui.theme.Space
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SubjectsDetailsTab(viewModel: ExamPlannerViewModel) {
-    var showAddForm by remember { mutableStateOf(false) }
+fun SubjectsDetailsTab(
+    viewModel: ExamPlannerViewModel,
+    defaultLevel: Int,
+    defaultTerm: Int,
+) {
+    val c = NestifyTheme.colors
+    val session by viewModel.sessionFlow.collectAsState(initial = null)
+    val currentRole = session?.role ?: UserRole.STUDENT
 
+    var showAddForm by remember { mutableStateOf(false) }
     var courseName by remember { mutableStateOf("") }
     var courseCode by remember { mutableStateOf("") }
     var creditsInput by remember { mutableStateOf("3.0") }
-    var selectedLevel by remember { mutableStateOf(2) }
-    var selectedTerm by remember { mutableStateOf(2) }
+    var selectedLevel by remember(defaultLevel) { mutableStateOf(defaultLevel) }
+    var selectedTerm by remember(defaultTerm) { mutableStateOf(defaultTerm) }
 
-    // Filter states
-    var filterLevel by remember { mutableStateOf(2) }
-    var filterTerm by remember { mutableStateOf(2) }
+    var filterLevel by remember(defaultLevel) { mutableStateOf(defaultLevel) }
+    var filterTerm by remember(defaultTerm) { mutableStateOf(defaultTerm) }
 
-    // Core list state populated from DB
     val coursesList by viewModel.subjects.collectAsState()
+    val isEditable = filterLevel == defaultLevel && filterTerm == defaultTerm
+    val filteredCourses = coursesList.filter { it.level == filterLevel && it.term == filterTerm }
 
-    val levels = listOf(1, 2, 3, 4)
-    val terms = listOf(1, 2)
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    LazyColumn(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(start = Space.screen, end = Space.screen, top = Space.s, bottom = AcademicNavClearance),
+        verticalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        // Form toggle button / form block
-        AnimatedVisibility(
-            visible = showAddForm,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.08f))
+        item {
+            AnimatedVisibility(
+                visible = showAddForm,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        "Add New Course",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = NestifySlate
-                    )
-
-                    OutlinedTextField(
-                        value = courseName,
-                        onValueChange = { courseName = it },
-                        label = { Text("Course Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NestifySlate,
-                            unfocusedBorderColor = Color(0xFFECF0F1)
-                        )
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = courseCode,
-                            onValueChange = { courseCode = it },
-                            label = { Text("Code") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = NestifySlate,
-                                unfocusedBorderColor = Color(0xFFECF0F1)
-                            )
-                        )
-
-                        OutlinedTextField(
-                            value = creditsInput,
-                            onValueChange = { creditsInput = it },
-                            label = { Text("Credits") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = NestifySlate,
-                                unfocusedBorderColor = Color(0xFFECF0F1)
-                            )
-                        )
-                    }
-
-                    // Level/Term selectors
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Level", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                levels.forEach { lvl ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (selectedLevel == lvl) NestifySlate else Color(0xFFF0F2F3))
-                                            .clickable { selectedLevel = lvl },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            lvl.toString(),
-                                            color = if (selectedLevel == lvl) Color.White else Color.Black,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
+                NestifyCard(Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
+                        Text("Add new course", style = NestifyTheme.type.h3Serif, color = c.ink)
+                        NestifyInput(courseName, { courseName = it }, label = "Course name", placeholder = "Operating Systems")
+                        Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                            NestifyInput(courseCode, { courseCode = it }, modifier = Modifier.weight(1f), label = "Code", placeholder = "CSE-303")
+                            NestifyInput(creditsInput, { creditsInput = it }, modifier = Modifier.weight(1f), label = "Credits", placeholder = "3.0")
+                        }
+                        Column {
+                            Kicker("Level")
+                            Spacer(Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                (1..4).forEach { lvl ->
+                                    Chip("L$lvl", active = selectedLevel == lvl, onClick = { selectedLevel = lvl })
                                 }
                             }
                         }
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Term", fontSize = 11.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                terms.forEach { trm ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (selectedTerm == trm) NestifySlate else Color(0xFFF0F2F3))
-                                            .clickable { selectedTerm = trm },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            trm.toString(),
-                                            color = if (selectedTerm == trm) Color.White else Color.Black,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
+                        Column {
+                            Kicker("Term")
+                            Spacer(Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                (1..2).forEach { trm ->
+                                    Chip("T$trm", active = selectedTerm == trm, onClick = { selectedTerm = trm })
                                 }
                             }
                         }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { showAddForm = false },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Cancel")
-                        }
-                        Button(
-                            onClick = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                            NButton("Cancel", { showAddForm = false }, modifier = Modifier.weight(1f), variant = BtnVariant.Secondary)
+                            NButton("Save course", {
                                 if (courseName.isNotBlank() && courseCode.isNotBlank()) {
-                                    val credits = creditsInput.toFloatOrNull() ?: 3.0f
                                     viewModel.insertSubject(
                                         SubjectEntity(
                                             name = courseName,
                                             code = courseCode.uppercase(),
-                                            credits = credits,
+                                            credits = creditsInput.toFloatOrNull() ?: 3.0f,
                                             level = selectedLevel,
-                                            term = selectedTerm
+                                            term = selectedTerm,
                                         )
                                     )
-                                    // Reset inputs
-                                    courseName = ""
-                                    courseCode = ""
-                                    creditsInput = "3.0"
-                                    showAddForm = false
+                                    courseName = ""; courseCode = ""; creditsInput = "3.0"; showAddForm = false
                                 }
-                            },
-                            modifier = Modifier.weight(1.5f),
-                            colors = ButtonDefaults.buttonColors(containerColor = NestifySlate)
-                        ) {
-                            Text("Save Course")
+                            }, modifier = Modifier.weight(1.4f))
                         }
                     }
                 }
             }
         }
 
-        // Filter Header Bar
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.05f))
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = null,
-                        tint = NestifySlate,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Viewing Filter:",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = NestifySlate
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Level Filter Selector
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(NestifySlate.copy(alpha = 0.05f))
-                            .clickable {
-                                filterLevel = if (filterLevel == 4) 1 else filterLevel + 1
-                            }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("L$filterLevel", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
-                        Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = NestifySlate)
-                    }
-
-                    // Term Filter Selector
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(NestifySlate.copy(alpha = 0.05f))
-                            .clickable {
-                                filterTerm = if (filterTerm == 2) 1 else 2
-                            }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("T$filterTerm", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = NestifySlate)
-                        Icon(Icons.Default.ArrowDropDown, null, modifier = Modifier.size(14.dp), tint = NestifySlate)
-                    }
-                }
-            }
-        }
-
-        // Action Header list view
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Courses in L$filterLevel T$filterTerm",
-                fontWeight = FontWeight.Black,
-                fontSize = 17.sp,
-                color = NestifySlate
+        item {
+            LevelTermFilter(
+                level = filterLevel, term = filterTerm,
+                onLevel = { filterLevel = it }, onTerm = { filterTerm = it },
             )
-            IconButton(
-                onClick = { showAddForm = !showAddForm },
-                colors = IconButtonDefaults.iconButtonColors(containerColor = NestifySlate)
-            ) {
-                Icon(
-                    imageVector = if (showAddForm) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = "Add Course",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
 
-        val filteredCourses = coursesList.filter { it.level == filterLevel && it.term == filterTerm }
+        item {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionHead(title = "L$filterLevel · T$filterTerm", kicker = "Registered courses", modifier = Modifier.weight(1f))
+                if (isEditable) {
+                    RoleGate(currentRole = currentRole, requiredRole = UserRole.CR) {
+                        IconButtonChrome(
+                            if (showAddForm) Icons.Default.Close else Icons.Default.Add,
+                            onClick = { showAddForm = !showAddForm },
+                            tint = c.brand,
+                            contentDescription = "Add course",
+                        )
+                    }
+                }
+            }
+        }
 
         if (filteredCourses.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(1.dp, Color(0xFFECF0F1), RoundedCornerShape(20.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color.LightGray
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text("No registered courses found.", color = Color.Gray, fontSize = 13.sp)
-                }
+            item {
+                EmptyState(
+                    icon = Icons.Outlined.MenuBook,
+                    title = "No courses yet",
+                    description = "No registered courses found for this level and term.",
+                )
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filteredCourses) { course ->
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, NestifySlate.copy(alpha = 0.05f)),
-                        shadowElevation = 1.dp
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(NestifySlate.copy(alpha = 0.08f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    course.credits.toString(),
-                                    fontWeight = FontWeight.Black,
-                                    color = NestifySlate,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    course.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = NestifySlate
-                                )
-                                Text(
-                                    course.code,
-                                    fontSize = 12.sp,
-                                    color = Color.Gray,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            IconButton(
-                                onClick = { viewModel.deleteSubject(course) }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
+            items(filteredCourses) { course ->
+                NestifyCard(Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                        CreditBadge(course.credits)
+                        Column(Modifier.weight(1f)) {
+                            OneLine(course.name, style = NestifyTheme.type.label.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = c.ink)
+                            Kicker(course.code)
+                        }
+                        if (isEditable) {
+                            RoleGate(currentRole = currentRole, requiredRole = UserRole.CR) {
+                                IconButtonChrome(
+                                    Icons.Default.DeleteOutline,
+                                    onClick = { viewModel.deleteSubject(course) },
+                                    tint = c.coral,
                                     contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+internal fun CreditBadge(credits: Float) {
+    val c = NestifyTheme.colors
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(Radii.m)
+            .background(c.brandSoft),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                if (credits % 1f == 0f) credits.toInt().toString() else credits.toString(),
+                style = NestifyTheme.type.h3Serif,
+                color = c.brand,
+            )
+            Text("cr", style = NestifyTheme.type.meta, color = c.brand, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

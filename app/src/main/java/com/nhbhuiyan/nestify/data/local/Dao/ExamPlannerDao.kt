@@ -42,8 +42,11 @@ interface ExamPlannerDao {
     @Query("SELECT * FROM syllabus_topics WHERE subjectId = :subjectId")
     fun getSyllabusTopicsForSubject(subjectId: Long): Flow<List<SyllabusTopicEntity>>
 
+    @Query("SELECT * FROM syllabus_topics WHERE id = :id")
+    suspend fun getSyllabusTopicById(id: Long): SyllabusTopicEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSyllabusTopic(topic: SyllabusTopicEntity)
+    suspend fun insertSyllabusTopic(topic: SyllabusTopicEntity): Long
 
     @Update
     suspend fun updateSyllabusTopic(topic: SyllabusTopicEntity)
@@ -60,4 +63,17 @@ interface ExamPlannerDao {
 
     @Delete
     suspend fun deleteTermReport(report: TermReportEntity)
+
+    // PYQs Queries
+    @Query("SELECT * FROM pyqs WHERE topicId = :topicId")
+    fun getPYQsForTopic(topicId: Long): Flow<List<com.nhbhuiyan.nestify.data.local.entity.PYQEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity): Long
+
+    @Update
+    suspend fun updatePYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity)
+
+    @Delete
+    suspend fun deletePYQ(pyq: com.nhbhuiyan.nestify.data.local.entity.PYQEntity)
 }
